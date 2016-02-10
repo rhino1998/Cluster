@@ -1,0 +1,45 @@
+{
+	"timeout":25,
+	"mappings": 
+		{
+			"RPC":
+				{
+					"description":"RPC %s Port %d",
+					"port": 2008,
+					"protocols":
+						[
+							"tcp",
+							"udp"
+						]
+				},
+			"DHT":
+				{
+					"description":"DHT %s Port %d",
+					"port": 2009,
+					"protocols":
+						[	
+							"tcp",
+							"udp"
+						]
+				},
+			"DHT HTTP":
+				{
+					"description":"DHT HTTP %s Port %d",
+					"port": 2010,
+					"protocols":
+						[	
+							"tcp",
+							"udp"
+						]
+				}
+		
+			
+			
+			
+		},
+	"maxtasks": 50,
+	"dhtseed": "108.31.152.169:6009",
+	"peerseed": "192.168.1.134:7000", //comment test
+	"maxtasks": 5,
+	"externalip": "108.31.152.169"
+}
