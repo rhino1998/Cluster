@@ -10,7 +10,7 @@ import (
 
 type Configuration struct {
 	Timeout   int                        `json:"timeout"`
-	Mappings  map[string]forward.Mapping `json:mappings`
+	Mappings  map[string]forward.Mapping `json:"mappings"`
 	Forwarded bool                       `json:"forwarded"`
 	PeerSeed  string                     `json:"peerseed"`
 	DHTSeed   string                     `json:"dhtseed"`
