@@ -4,13 +4,13 @@ import (
 	"log"
 )
 
-func init() {
-	//initForward()
-	log.Println("initialized")
-}
+var (
+	This *node.Node
+)
 
 func main() {
-	//aliveLoop()
+	//initForward()
+	initDHT()
 	log.Println("whee")
 	select {}
 }

@@ -6,7 +6,3 @@ import (
 	//"github.com/rhino1998/cluster/peers"
 	//"net"
 )
-
-var (
-	This *node.Node
-)

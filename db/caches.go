@@ -3,7 +3,8 @@ package db
 import (
 	"errors"
 	"github.com/muesli/cache2go"
-	"github.com/zond/god/dhash"
+	"github.com/rhino1998/god/common"
+	"github.com/rhino1998/god/dhash"
 	"sync"
 )
 
@@ -15,11 +16,11 @@ var (
 type CacheLayer struct {
 	sync.RWMutex
 	Caches map[string]*cache2go.CacheTable
-	DB     *dhash.Node
+	db     *dhash.Node
 }
 
 func NewCacheLayer(node *dhash.Node) *CacheLayer {
-	return &CacheLayer{Caches: make(map[string]*cache2go.CacheTable), DB: node}
+	return &CacheLayer{Caches: make(map[string]*cache2go.CacheTable), db: node}
 }
 
 func (self *CacheLayer) AddCache(id string) error {
@@ -34,7 +35,7 @@ func (self *CacheLayer) AddCache(id string) error {
 	return nil
 }
 
-func (self *CacheLayer) AddCacheItem(id string, key string, data []byte) error {
+func (self *CacheLayer) Add(id string, key string, data []byte) error {
 	self.RLock()
 	if _, found := self.Caches[id]; !found {
 		return CacheNotFound
@@ -46,7 +47,7 @@ func (self *CacheLayer) AddCacheItem(id string, key string, data []byte) error {
 	return nil
 }
 
-func (self *CacheLayer) DeleteCacheItem(id string, key string) error {
+func (self *CacheLayer) Delete(id string, key string) error {
 	self.RLock()
 	if _, found := self.Caches[id]; !found {
 		return CacheNotFound
@@ -58,14 +59,26 @@ func (self *CacheLayer) DeleteCacheItem(id string, key string) error {
 	return nil
 }
 
-func (self *CacheLayer) GetCacheItem(id string, key string) ([]byte, error) {
+func (self *CacheLayer) Get(id string, key []byte) ([]byte, error) {
 	self.RLock()
 	if _, found := self.Caches[id]; !found {
-		return nil, CacheNotFound
+		data := &common.Item{}
+		err := self.db.Get(common.Item{Key: key}, data)
+		return data.Value, err
 	}
 	self.RUnlock()
 	self.Lock()
 	data, err := self.Caches[id].Value(key)
 	self.Unlock()
 	return data.Data().([]byte), err
+}
+
+func (self *CacheLayer) push(key interface{}, item *cache2go.CacheItem) {
+	self.db.Put(common.Item{Key: key.([]byte), Value: item.Data().([]byte), Sync: false})
+}
+
+func (self *CacheLayer) Commit(id string) error {
+	self.Caches[id].Foreach(self.push)
+	return nil
+
 }

@@ -21,25 +21,12 @@
 							"tcp",
 							"udp"
 						]
-				},
-			"DHT HTTP":
-				{
-					"description":"DHT HTTP %s Port %d",
-					"port": 2010,
-					"protocols":
-						[	
-							"tcp",
-							"udp"
-						]
 				}
-		
-			
-			
-			
 		},
 	"maxtasks": 50,
-	"dhtseed": "108.31.152.169:6009",
+	"dhtseed": "",
 	"peerseed": "192.168.1.134:7000", //comment test
 	"maxtasks": 5,
+	"compute" : true,
 	"externalip": "108.31.152.169"
 }
