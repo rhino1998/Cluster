@@ -5,8 +5,7 @@ import (
 )
 
 func init() {
-	initForward()
-	initDHT()
+	//initForward()
 	log.Println("initialized")
 }
 

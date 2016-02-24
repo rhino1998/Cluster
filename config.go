@@ -24,12 +24,16 @@ var (
 
 func getConfig(path string) Configuration {
 	file, err := os.Open(path + "/conf.json")
-	errpanic(err)
+	if err != nil {
+		panic(err)
+	}
 	comment, err := regexp.Compile("\\/\\/.*\\n")
 	conf, err := ioutil.ReadAll(file)
 	conf = comment.ReplaceAll(conf, []byte(""))
 	configuration := Configuration{}
 	err = json.Unmarshal(conf, &configuration)
-	errpanic(err)
+	if err != nil {
+		panic(err)
+	}
 	return configuration
 }

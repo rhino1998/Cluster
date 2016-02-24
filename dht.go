@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	KVStore *dhash.Node = dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", This.ExternalIP, Config.Mappings["DHT"].Port), "")
+	KVStore *dhash.Node = dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", This.Addr, Config.Mappings["DHT"].Port), "")
 )
 
 func initDHT() {

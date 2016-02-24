@@ -8,7 +8,7 @@ import (
 )
 
 type Item struct {
-	val   interface{}
+	val   []byte
 	index time.Time
 }
 
@@ -16,7 +16,7 @@ func (self Item) String() string {
 	return fmt.Sprintf("%v:%v", self.index, self.val)
 }
 
-func (self *Item) Value() interface{} {
+func (self *Item) Value() []byte {
 	return self.val
 }
 
@@ -115,7 +115,7 @@ func (self *TimeList) search(index time.Time) int {
 }
 
 //Append item to end of TimeList
-func (self *TimeList) Append(value interface{}) {
+func (self *TimeList) Append(value []byte) {
 	self.Lock()
 	defer self.Unlock()
 	if len(self.vals) == cap(self.vals) {
@@ -128,7 +128,7 @@ func (self *TimeList) Append(value interface{}) {
 }
 
 //Inserts value at given time
-func (self *TimeList) Insert(value interface{}, index time.Time) {
+func (self *TimeList) Insert(value []byte, index time.Time) {
 	newItem := Item{val: value, index: index.UTC()}
 	self.Lock()
 	defer self.Unlock()

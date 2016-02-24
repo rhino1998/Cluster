@@ -7,17 +7,6 @@ import (
 	"net/http"
 )
 
-type ipFunc func() (ip net.IP, err error)
-
-func (fn ipFunc) ipAssign() net.IP {
-	ip, err := fn()
-	if err != nil {
-		log.Println(err)
-		panic(err)
-		return
-	}
-}
-
 func getLocalIP() (ip net.IP, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -45,7 +34,7 @@ func getLocalIP() (ip net.IP, err error) {
 			}
 		}
 	}
-	return
+	return nil
 }
 
 //replace this eventually
