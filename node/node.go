@@ -1,6 +1,7 @@
 package node
 
 import (
+	"github.com/rhino1998/cluster/db"
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/peers"
 	"github.com/rhino1998/cluster/tasks"
@@ -13,6 +14,7 @@ import (
 
 type Node struct {
 	sync.RWMutex
+	DB                   *db.TransactionLayer
 	Tasks                int64
 	Peers                *peers.Peers
 	Addr                 string `json:"addr"`
@@ -21,8 +23,8 @@ type Node struct {
 	info.Info
 }
 
-func NewNode(extip, locip string, description info.Info) *Node {
-	return &Node{Peers: peers.NewPeers(), Addr: extip, LocalIP: locip, Info: description, lastroutetableupdate: time.Now(), Tasks: 0}
+func NewNode(extip, locip string, description info.Info, layer *db.TransactionLayer) *Node {
+	return &Node{Peers: peers.NewPeers(), Addr: extip, LocalIP: locip, Info: description, lastroutetableupdate: time.Now(), Tasks: 0, DB: layer}
 }
 
 func (self *Node) GetPeers(r *http.Request, start time.Time, peerList []string) error {

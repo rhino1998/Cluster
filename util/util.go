@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func getLocalIP() (ip net.IP, err error) {
+func GetLocalIP() (ip net.IP, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func getLocalIP() (ip net.IP, err error) {
 }
 
 //replace this eventually
-func getExternalIP() (ip net.IP, err error) {
+func GetExternalIP() (ip net.IP, err error) {
 	resp, err := http.Get("http://myexternalip.com/raw")
 	if err != nil {
 		return nil, err

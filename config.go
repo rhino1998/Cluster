@@ -16,14 +16,15 @@ type Configuration struct {
 	DHTSeed   string                     `json:"dhtseed"`
 	MaxTasks  int                        `json:"maxtasks"`
 	External  string                     `json:"externalip"`
+	Compute   bool                       `json:"compute"`
 }
 
 var (
-	Config Configuration = getConfig(".")
+	Config Configuration = getConfig("./conf.json")
 )
 
 func getConfig(path string) Configuration {
-	file, err := os.Open(path + "/conf.json")
+	file, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
