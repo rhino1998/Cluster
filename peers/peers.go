@@ -28,7 +28,7 @@ var (
 
 //Creates an empty list of peers
 func NewPeers() *Peers {
-	return &Peers{index: timelist.New(), data: querymap.New()}
+	return &Peers{index: timelist.NewTimeList(), data: querymap.NewQueryMap(), peers: make(map[string]*peer.Peer)}
 }
 
 func (self *Peers) GetPeer(addr string) (*peer.Peer, error) {
@@ -89,26 +89,25 @@ func (self *Peers) BestMatch(reqs []reqs.Req) (*peer.Peer, error) {
 func (self *Peers) After(start time.Time) ([]*peer.Peer, error) {
 	self.Lock()
 	defer self.Unlock()
-	var found bool
 	addrs := self.index.After(start)
-	temp := make([]*peer.Peer, addrs.Length(), addrs.Length())
-	for i, addr := range addrs.Items() {
-		temp[i], found = self.peers[string(addr.Value())]
-		if !found {
-			return nil, NoPeerFound
+	if len(addrs.Items()) > 0 {
+		temp := make([]*peer.Peer, addrs.Length(), addrs.Length())
+		for i, addr := range addrs.Items() {
+			temp[i], _ = self.peers[string(addr.Value())]
 		}
+		return temp, nil
 	}
-	return temp, nil
+	return nil, nil
 }
 
 //Adds a peer to the set of peers
-func (self *Peers) AddPeer(peer peer.Peer) {
+func (self *Peers) AddPeer(peer *peer.Peer) {
 	self.Lock()
 	defer self.Unlock()
 	temp := structs.Map(peer)
 
 	delete(temp, "timestamp")
-	self.peers[peer.Addr] = &peer
+	self.peers[peer.Addr] = peer
 	self.data.Assign(peer.Addr, temp)
 	self.index.Insert([]byte(peer.Addr), peer.Timestamp)
 	return

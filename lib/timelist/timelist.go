@@ -31,11 +31,8 @@ type TimeList struct {
 	end   time.Time
 }
 
-func New() *TimeList {
-	t := new(TimeList)
-	t.start = time.Now().UTC()
-	t.end = time.Now().UTC()
-	return t
+func NewTimeList() *TimeList {
+	return &TimeList{vals: make([]Item, 0), start: time.Now().UTC(), end: time.Now().UTC()}
 }
 
 func (self *TimeList) Length() int {
@@ -205,9 +202,12 @@ func (self *TimeList) RemoveBefore(index time.Time) {
 func (self *TimeList) After(index time.Time) *TimeList {
 	self.RLock()
 	defer self.RUnlock()
+	if len(self.vals) == 1 && self.vals[0].Time().After(index) {
+		return &TimeList{vals: self.vals, start: self.vals[0].index, end: self.end}
+	}
 	i := self.search(index)
 	if i == -1 {
-		return nil
+		return NewTimeList()
 	}
 	return &TimeList{vals: self.vals[i:], start: self.vals[i].index, end: self.end}
 }
@@ -216,9 +216,12 @@ func (self *TimeList) After(index time.Time) *TimeList {
 func (self *TimeList) Before(index time.Time) *TimeList {
 	self.RLock()
 	defer self.RUnlock()
+	if len(self.vals) == 1 && self.vals[0].Time().Before(index) {
+		return &TimeList{vals: self.vals, start: self.start, end: self.vals[0].index}
+	}
 	i := self.search(index)
 	if i == -1 {
-		return nil
+		return NewTimeList()
 	}
 	return &TimeList{vals: self.vals[:i], start: self.start, end: self.vals[i].index}
 }

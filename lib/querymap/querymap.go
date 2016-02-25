@@ -10,7 +10,7 @@ type QueryMap struct {
 }
 
 //Makes a new QueryMap
-func New() *QueryMap {
+func NewQueryMap() *QueryMap {
 	return &QueryMap{data: make(map[string]map[string]interface{})}
 }
 

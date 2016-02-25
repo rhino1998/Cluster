@@ -3,8 +3,10 @@ package node
 import (
 	"github.com/rhino1998/cluster/db"
 	"github.com/rhino1998/cluster/info"
+	"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/peers"
 	"github.com/rhino1998/cluster/tasks"
+	"log"
 	"net/http"
 	"os/exec"
 	"reflect"
@@ -41,8 +43,11 @@ func (self *Node) Ping(start time.Time, end *time.Time) error {
 	return nil
 }
 
-func (self *Node) Describe(r *http.Request, n *bool, desciption *info.Info) error {
-	desciption = &info.Info{Specs: self.Specs, Compute: self.Compute}
+func (self *Node) Greet(r *http.Request, peernode *peer.Peer, desciption *info.Info) error {
+	*desciption = info.Info{Compute: self.Compute, Specs: self.Specs}
+	log.Println(peernode.Connection.Addr)
+	log.Println(*desciption)
+	self.Peers.AddPeer(peernode)
 	return nil
 }
 
@@ -57,11 +62,11 @@ func (self *Node) RouteTask(r *http.Request, task *tasks.Task, result *[]byte) e
 			if err != nil {
 				return err
 			}
-			peer, err := self.Peers.BestMatch(task.Reqs)
+			peernode, err := self.Peers.BestMatch(task.Reqs)
 			if err != nil {
 				return err
 			}
-			result, err = peer.AllocateTask(task)
+			result, err = peernode.AllocateTask(task)
 			if err != nil {
 				return err
 			}
