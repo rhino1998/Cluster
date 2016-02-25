@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cluster/forward"
 	"encoding/json"
+	"github.com/rhino1998/cluster/forward"
 	"io/ioutil"
 	"os"
 	"regexp"

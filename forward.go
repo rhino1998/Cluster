@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cluster/forward"
+	"github.com/rhino1998/cluster/forward"
 	"github.com/syncthing/syncthing/lib/upnp"
 	"log"
 	"time"

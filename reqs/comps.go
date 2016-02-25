@@ -1,29 +1,29 @@
 package reqs
 
-func GT(value, check interface{}) (bool, err) {
+func GT(value, check interface{}) (bool, error) {
 	comp := value.(float64) > check.(float64)
 	return comp, nil
 }
 
-func GTE(value, check interface{}) (bool, err) {
+func GTE(value, check interface{}) (bool, error) {
 	comp := value.(float64) >= check.(float64)
 	return comp, nil
 }
-func LT(value, check interface{}) (bool, err) {
+func LT(value, check interface{}) (bool, error) {
 	comp := value.(float64) < check.(float64)
 	return comp, nil
 }
-func LTE(value, check interface{}) (bool, err) {
+func LTE(value, check interface{}) (bool, error) {
 	comp := value.(float64) <= check.(float64)
 	return comp, nil
 }
 
-func EQ(value, check interface{}) (bool, err) {
+func EQ(value, check interface{}) (bool, error) {
 	comp := value == check
 	return comp, nil
 }
 
-func NEQ(value, check interface{}) (bool, err) {
+func NEQ(value, check interface{}) (bool, error) {
 	comp := value == check
 	return comp, nil
 }

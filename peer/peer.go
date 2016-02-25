@@ -3,6 +3,7 @@ package peer
 import (
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/lib/jsonrpc"
+	"github.com/rhino1998/cluster/tasks"
 	"sync"
 	"time"
 )
@@ -28,6 +29,7 @@ func (self *Peer) Ping() (time.Time, error) {
 	return time.Now(), nil
 }
 
-func (self *Peer) Pong() (time.Time, error) {
-	return time.Now(), nil
+func (self *Peer) AllocateTask(task *tasks.Task) (result *[]byte, err error) {
+	err = self.connection.Call("Node.Allocate", true, &result)
+	return result, err
 }

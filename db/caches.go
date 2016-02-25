@@ -9,76 +9,76 @@ import (
 )
 
 var (
-	CacheNotFound      error = errors.New("Cache not found")
-	CacheAlreadyExists error = errors.New("Cache already exists")
+	TransactionNotFound      error = errors.New("Cache not found")
+	TransactionAlreadyExists error = errors.New("Cache already exists")
 )
 
-type CacheLayer struct {
+type TransactionLayer struct {
 	sync.RWMutex
-	Caches map[string]*cache2go.CacheTable
-	db     *dhash.Node
+	transactions map[string]*cache2go.CacheTable
+	DB           *dhash.Node
 }
 
-func NewCacheLayer(node *dhash.Node) *CacheLayer {
-	return &CacheLayer{Caches: make(map[string]*cache2go.CacheTable), db: node}
+func NewTransactionLayer(node *dhash.Node) *TransactionLayer {
+	return &TransactionLayer{transactions: make(map[string]*cache2go.CacheTable), DB: node}
 }
 
-func (self *CacheLayer) AddCache(id string) error {
+func (self *TransactionLayer) NewTransaction(id string) error {
 	self.RLock()
-	if _, found := self.Caches[id]; found {
-		return CacheAlreadyExists
+	if _, found := self.transactions[id]; found {
+		return TransactionAlreadyExists
 	}
 	self.RUnlock()
 	self.Lock()
-	self.Caches[id] = cache2go.Cache(id)
+	self.transactions[id] = cache2go.Cache(id)
 	self.Unlock()
 	return nil
 }
 
-func (self *CacheLayer) Add(id string, key string, data []byte) error {
+func (self *TransactionLayer) Add(id string, key string, data []byte) error {
 	self.RLock()
-	if _, found := self.Caches[id]; !found {
-		return CacheNotFound
+	if _, found := self.transactions[id]; !found {
+		return TransactionNotFound
 	}
 	self.RUnlock()
 	self.Lock()
-	self.Caches[id].Add(key, 0, data)
+	self.transactions[id].Add(key, 0, data)
 	self.Unlock()
 	return nil
 }
 
-func (self *CacheLayer) Delete(id string, key string) error {
+func (self *TransactionLayer) Delete(id string, key string) error {
 	self.RLock()
-	if _, found := self.Caches[id]; !found {
-		return CacheNotFound
+	if _, found := self.transactions[id]; !found {
+		return TransactionNotFound
 	}
 	self.RUnlock()
 	self.Lock()
-	self.Caches[id].Delete(key)
+	self.transactions[id].Delete(key)
 	self.Unlock()
 	return nil
 }
 
-func (self *CacheLayer) Get(id string, key []byte) ([]byte, error) {
+func (self *TransactionLayer) Get(id string, key []byte) ([]byte, error) {
 	self.RLock()
-	if _, found := self.Caches[id]; !found {
+	if _, found := self.transactions[id]; !found {
 		data := &common.Item{}
-		err := self.db.Get(common.Item{Key: key}, data)
+		err := self.DB.Get(common.Item{Key: key}, data)
 		return data.Value, err
 	}
 	self.RUnlock()
 	self.Lock()
-	data, err := self.Caches[id].Value(key)
+	data, err := self.transactions[id].Value(key)
 	self.Unlock()
 	return data.Data().([]byte), err
 }
 
-func (self *CacheLayer) push(key interface{}, item *cache2go.CacheItem) {
-	self.db.Put(common.Item{Key: key.([]byte), Value: item.Data().([]byte), Sync: false})
+func (self *TransactionLayer) push(key interface{}, item *cache2go.CacheItem) {
+	self.DB.Put(common.Item{Key: key.([]byte), Value: item.Data().([]byte), Sync: false})
 }
 
-func (self *CacheLayer) Commit(id string) error {
-	self.Caches[id].Foreach(self.push)
+func (self *TransactionLayer) Commit(id string) error {
+	self.transactions[id].Foreach(self.push)
 	return nil
 
 }
