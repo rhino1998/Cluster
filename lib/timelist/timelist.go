@@ -3,6 +3,7 @@ package timelist
 import (
 	"errors"
 	"fmt"
+	"github.com/rhino1998/cluster/util"
 	"sync"
 	"time"
 )
@@ -33,6 +34,17 @@ type TimeList struct {
 
 func NewTimeList() *TimeList {
 	return &TimeList{vals: make([]Item, 0), start: time.Now().UTC(), end: time.Now().UTC()}
+}
+
+func (self *TimeList) Exists(check []byte) bool {
+	self.RLock()
+	defer self.RUnlock()
+	for _, val := range self.vals {
+		if util.ByteSliceEq(val.Value(), check) {
+			return true
+		}
+	}
+	return false
 }
 
 func (self *TimeList) Length() int {
@@ -151,6 +163,10 @@ func (self *TimeList) Insert(value []byte, index time.Time) {
 func (self *TimeList) PopAfter(index time.Time) (*TimeList, error) {
 	self.Lock()
 	defer self.Unlock()
+	if len(self.vals) == 1 && self.vals[0].Time().After(index) {
+		self.vals = make([]Item, 0)
+		return &TimeList{vals: self.vals, start: self.vals[0].index, end: self.end}, nil
+	}
 	i := self.search(index)
 	if i == -1 {
 		return nil, errors.New(fmt.Sprintf("%v is outside range", index))
@@ -165,6 +181,10 @@ func (self *TimeList) PopAfter(index time.Time) (*TimeList, error) {
 func (self *TimeList) PopBefore(index time.Time) (*TimeList, error) {
 	self.Lock()
 	defer self.Unlock()
+	if len(self.vals) == 1 && self.vals[0].Time().Before(index) {
+		self.vals = make([]Item, 0)
+		return &TimeList{vals: self.vals, start: self.start, end: self.vals[0].index}, nil
+	}
 	i := self.search(index)
 	if i == -1 {
 		return nil, errors.New(fmt.Sprintf("%v is outside range", index))
@@ -203,13 +223,15 @@ func (self *TimeList) After(index time.Time) *TimeList {
 	self.RLock()
 	defer self.RUnlock()
 	if len(self.vals) == 1 && self.vals[0].Time().After(index) {
-		return &TimeList{vals: self.vals, start: self.vals[0].index, end: self.end}
+		return &TimeList{vals: self.vals, start: self.start, end: self.end}
 	}
 	i := self.search(index)
 	if i == -1 {
 		return NewTimeList()
 	}
-	return &TimeList{vals: self.vals[i:], start: self.vals[i].index, end: self.end}
+	var temp []Item
+	copy(temp, self.vals[i:])
+	return &TimeList{vals: temp, start: self.vals[i].index, end: self.end}
 }
 
 //Retuns a new ItemList containing items before given time
@@ -217,13 +239,15 @@ func (self *TimeList) Before(index time.Time) *TimeList {
 	self.RLock()
 	defer self.RUnlock()
 	if len(self.vals) == 1 && self.vals[0].Time().Before(index) {
-		return &TimeList{vals: self.vals, start: self.start, end: self.vals[0].index}
+		return &TimeList{vals: self.vals, start: self.start, end: self.end}
 	}
 	i := self.search(index)
 	if i == -1 {
 		return NewTimeList()
 	}
-	return &TimeList{vals: self.vals[:i], start: self.start, end: self.vals[i].index}
+	var temp []Item
+	copy(temp, self.vals[:i])
+	return &TimeList{vals: temp, start: self.start, end: self.vals[i].index}
 }
 
 //Retuns athe first value at or after given time

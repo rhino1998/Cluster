@@ -5,7 +5,7 @@
 			"RPC":
 				{
 					"description":"RPC %s Port %d",
-					"port": 2006,
+					"port": 5008,
 					"protocols":
 						[
 							"tcp",
@@ -15,7 +15,7 @@
 			"DHT":
 				{
 					"description":"DHT %s Port %d",
-					"port": 2007,
+					"port": 5009,
 					"protocols":
 						[	
 							"tcp",

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"github.com/muesli/cache2go"
 	"github.com/rhino1998/cluster/db"
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/peer"
@@ -16,26 +17,51 @@ import (
 
 type Node struct {
 	sync.RWMutex
-	DB                   *db.TransactionLayer
-	Tasks                int64
-	Peers                *peers.Peers
-	Addr                 string `json:"addr"`
+	DB    *db.TransactionLayer
+	Tasks int64
+	TTL   time.Duration
+	Peers *peers.Peers
+	peer.Peer
+	peerCache            *cache2go.CacheTable
 	LocalIP              string
 	lastroutetableupdate time.Time
-	info.Info
 }
 
-func NewNode(extip, locip string, description info.Info, layer *db.TransactionLayer) *Node {
-	return &Node{Peers: peers.NewPeers(), Addr: extip, LocalIP: locip, Info: description, lastroutetableupdate: time.Now(), Tasks: 0, DB: layer}
+func NewNode(extip, locip string, description info.Info, layer *db.TransactionLayer, ttl time.Duration) *Node {
+	return &Node{Peers: peers.NewPeers(ttl), Peer: *peer.ThisPeer(extip, description), LocalIP: locip, lastroutetableupdate: time.Now(), Tasks: 0, DB: layer, TTL: ttl, peerCache: cache2go.Cache("PeerCache")}
 }
 
-func (self *Node) GetPeers(r *http.Request, start time.Time, peerList []string) error {
-	temp, err := self.Peers.After(start)
-	peerList = make([]string, len(temp))
-	for i, peer := range temp {
-		peerList[i] = peer.Addr
+func (self *Node) GreetPeer(addr string) error {
+	self.peerCache.Add(addr, 2*self.TTL, nil)
+	newpeer, err := peer.NewPeer(self.Addr, addr)
+	if err != nil {
+		return err
 	}
-	return err
+	self.Peers.AddPeer(newpeer)
+	self.Peers.Clean(self.Addr)
+	newpeernodeaddrs, err := newpeer.GetPeers(self.TTL)
+	if err == nil {
+		for _, newpeernodeaddr := range newpeernodeaddrs {
+			if !self.Peers.Exists(newpeernodeaddr) && newpeernodeaddr != self.Addr {
+				self.GreetPeer(newpeernodeaddr)
+			}
+
+		}
+	}
+	return nil
+}
+
+func (self *Node) GetPeers(r *http.Request, start *time.Duration, peerList *[]string) error {
+	log.Println(start)
+	temp := self.Peers.Items()
+	peers := make([]string, len(temp), cap(temp))
+	for i, peer := range temp {
+		log.Println(peer.Addr)
+		peers[i] = peer.Addr
+	}
+	log.Println(peers)
+	*peerList = peers
+	return nil
 }
 
 func (self *Node) Ping(start time.Time, end *time.Time) error {
@@ -43,11 +69,11 @@ func (self *Node) Ping(start time.Time, end *time.Time) error {
 	return nil
 }
 
-func (self *Node) Greet(r *http.Request, peernode *peer.Peer, desciption *info.Info) error {
+func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info) error {
 	*desciption = info.Info{Compute: self.Compute, Specs: self.Specs}
-	log.Println(peernode.Connection.Addr)
-	log.Println(*desciption)
-	self.Peers.AddPeer(peernode)
+	if !self.peerCache.Exists(*remaddr) && !self.Peers.Exists(*remaddr) {
+		self.GreetPeer(*remaddr)
+	}
 	return nil
 }
 

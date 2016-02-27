@@ -47,7 +47,7 @@ func (self *TransactionLayer) Add(id string, key string, data []byte) error {
 	return nil
 }
 
-func (self *TransactionLayer) Delete(id string, key string) error {
+func (self *TransactionLayer) Del(id string, key string) error {
 	self.RLock()
 	if _, found := self.transactions[id]; !found {
 		return TransactionNotFound
@@ -59,26 +59,46 @@ func (self *TransactionLayer) Delete(id string, key string) error {
 	return nil
 }
 
-func (self *TransactionLayer) Get(id string, key []byte) ([]byte, error) {
+func (self *TransactionLayer) Get(id string, key string) ([]byte, bool) {
 	self.RLock()
 	if _, found := self.transactions[id]; !found {
-		data := &common.Item{}
-		err := self.DB.Get(common.Item{Key: key}, data)
-		return data.Value, err
+		return self.DBGet(id, key)
 	}
 	self.RUnlock()
 	self.Lock()
-	data, err := self.transactions[id].Value(key)
+	data, err := self.transactions[id].Value([]byte(key))
 	self.Unlock()
-	return data.Data().([]byte), err
+	return data.Data().([]byte), err == nil
 }
 
-func (self *TransactionLayer) push(key interface{}, item *cache2go.CacheItem) {
-	self.DB.Put(common.Item{Key: key.([]byte), Value: item.Data().([]byte), Sync: false})
+func (self *TransactionLayer) DBPut(id string, key string, data []byte) {
+	self.DB.SubPut(common.Item{Key: []byte(id), SubKey: []byte(key), Value: data, Sync: false})
+}
+
+func (self *TransactionLayer) DBDel(id string, key string) {
+	self.DB.SubDel(common.Item{Key: []byte(id), SubKey: []byte(key), Sync: false})
+}
+
+func (self *TransactionLayer) DBGet(id string, key string) ([]byte, bool) {
+	var result *common.Item
+	self.DB.SubGet(common.Item{Key: []byte(id), SubKey: []byte(key), Sync: false}, result)
+	return result.Value, result.Exists
+}
+
+func (self *TransactionLayer) push(id string) func(key interface{}, item *cache2go.CacheItem) {
+	return func(key interface{}, item *cache2go.CacheItem) {
+		self.DB.SubPut(common.Item{Key: []byte(id), SubKey: key.([]byte), Value: item.Data().([]byte), Sync: false})
+	}
+
 }
 
 func (self *TransactionLayer) Commit(id string) error {
-	self.transactions[id].Foreach(self.push)
+	self.transactions[id].Foreach(self.push(id))
 	return nil
 
+}
+
+func (self *TransactionLayer) Discard(id string) error {
+	self.transactions[id].Flush()
+	return nil
 }

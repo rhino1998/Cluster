@@ -9,7 +9,7 @@ import (
 	"github.com/rhino1998/cluster/db"
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/node"
-	"github.com/rhino1998/cluster/peer"
+	//"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/util"
 	"github.com/rhino1998/god/dhash"
 	"log"
@@ -22,7 +22,6 @@ var (
 )
 
 func init_node() {
-	log.Println(Config.Mappings["DHT"].Port)
 	specs, err := bench.LoadSpecs("./specs.json")
 	if err != nil {
 		log.Println(err)
@@ -40,27 +39,14 @@ func init_node() {
 	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port), "")
 	kvstore.Start()
 	layer := db.NewTransactionLayer(kvstore)
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["DHT"].Port), *description, layer)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, layer, 20*time.Second)
 	if Config.DHTSeed != "" {
 		This.DB.DB.MustJoin(Config.DHTSeed)
 	}
 }
 
-func print() {
-	for {
-		time.Sleep(3 * time.Second)
-		vals, _ := This.Peers.After(time.Now().UTC().Add(-500 * time.Minute))
-		if len(vals) > 0 {
-			log.Println("peers")
-			for _, peernode := range vals {
-				log.Println(peernode.Addr)
-			}
-		}
-	}
-}
-
 func main() {
-	//initForward()
+	initForward()
 	init_node()
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
@@ -68,19 +54,29 @@ func main() {
 	s.RegisterService(This, "")
 	r := mux.NewRouter()
 	r.Handle("/rpc", s)
+	r.HandleFunc("/api/peers", api_peers)
+	r.HandleFunc("/api/db/put", api_db_put)
+	r.HandleFunc("/api/db/get", api_db_get)
+	r.HandleFunc("/api/db/del", api_db_del)
 	log.Println("whee")
 	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)
 	log.Println(s.HasMethod("Node.RouteTask"))
 	if Config.PeerSeed != "" {
-		log.Println("sup")
-		newpeer, err := peer.NewPeer(This.Addr, This.Info, Config.PeerSeed)
-		log.Println(newpeer)
-		if err != nil {
-			log.Println(err)
-			panic(err)
-		}
-		This.Peers.AddPeer(newpeer)
+		This.GreetPeer(Config.PeerSeed)
 	}
-	go print()
+	for {
+		time.Sleep(5 * time.Second)
+		go func() {
+
+			peernode, err := This.Peers.GetAPeer()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			This.GreetPeer(peernode.Addr)
+			log.Println("sup")
+		}()
+	}
+
 	select {}
 }
