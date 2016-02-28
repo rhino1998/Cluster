@@ -7,7 +7,7 @@ import (
 	"github.com/rhino1998/cluster/lib/timelist"
 	"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/reqs"
-	"log"
+	//"log"
 	"sync"
 	"time"
 	//"net"
@@ -97,7 +97,6 @@ func (self *Peers) cleanworker(locaddr, addr string) {
 		self.data.Assign(peernode.Addr, structs.Map(peernode))
 		self.index.Insert([]byte(peernode.Addr), time.Now().UTC())
 	} else {
-		log.Println(addr)
 		delete(self.peers, addr)
 		self.data.Delete(addr)
 	}
@@ -112,9 +111,8 @@ func (self *Peers) Clean(locaddr string) error {
 		return err
 	}
 	for _, index := range temp.Items() {
-		if !self.index.Exists(index.Value()) && !temp.Exists(index.Value()) {
+		if !self.index.Exists(index.Value()) && temp.Exists(index.Value()) {
 			go self.cleanworker(locaddr, string(index.Value()))
-			log.Println("Cleaned")
 
 		}
 	}
@@ -137,8 +135,7 @@ func (self *Peers) Items() []*peer.Peer {
 func (self *Peers) After(start time.Time) ([]*peer.Peer, error) {
 	self.Lock()
 	defer self.Unlock()
-	addrs := self.index.After(start)
-	log.Println(addrs.Length())
+	//addrs := self.index.After(start)
 	if true {
 		temp := make([]*peer.Peer, self.index.Length(), self.index.Length())
 		for i, addr := range self.index.Items() {

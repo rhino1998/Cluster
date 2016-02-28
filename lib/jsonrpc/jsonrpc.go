@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gorilla/rpc/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -32,11 +33,19 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	if err != nil {
 		return err
 	}
+	var bodyBytes []byte
+	if resp.Body != nil {
+		bodyBytes, _ = ioutil.ReadAll(resp.Body)
+	}
+	// Restore the io.ReadCloser to its original state
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	// Use the content
+	bodyString := string(bodyBytes)
+	log.Println(bodyString)
 	defer resp.Body.Close()
 	err = json.DecodeClientResponse(resp.Body, reply)
-	log.Println(reply)
 	if err != nil {
-		log.Fatalf("Couldn't decode response. %s", err)
+		log.Println("Couldn't decode response. %s", err)
 		return err
 	}
 	return nil

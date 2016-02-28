@@ -46,7 +46,7 @@ func init_node() {
 }
 
 func main() {
-	initForward()
+	//initForward()
 	init_node()
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
@@ -61,7 +61,7 @@ func main() {
 	r.HandleFunc("/api/task", api_task)
 	log.Println("whee")
 	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)
-	log.Println(s.HasMethod("Node.RouteTask"))
+	log.Println(s.HasMethod("Node.AllocateTask"))
 	if Config.PeerSeed != "" {
 		This.GreetPeer(Config.PeerSeed)
 	}
@@ -75,7 +75,6 @@ func main() {
 				return
 			}
 			This.GreetPeer(peernode.Addr)
-			log.Println("sup")
 		}()
 	}
 

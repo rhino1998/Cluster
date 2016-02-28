@@ -54,14 +54,11 @@ func (self *Node) GreetPeer(addr string) error {
 }
 
 func (self *Node) GetPeers(r *http.Request, start *time.Duration, peerList *[]string) error {
-	log.Println(start)
 	temp := self.Peers.Items()
 	peers := make([]string, len(temp), cap(temp))
 	for i, peer := range temp {
-		log.Println(peer.Addr)
 		peers[i] = peer.Addr
 	}
-	log.Println(peers)
 	*peerList = peers
 	return nil
 }
@@ -80,7 +77,8 @@ func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info)
 }
 
 func (self *Node) process(task *tasks.Task) ([]byte, error) {
-	return exec.Command(fmt.Sprintf("%v\\%v", task.Loc, task.FileName)).Output()
+	log.Println("Processing")
+	return exec.Command(fmt.Sprintf("%v", task.FileName)).Output()
 }
 
 func (self *Node) NewTask(task tasks.Task) error {
@@ -88,15 +86,17 @@ func (self *Node) NewTask(task tasks.Task) error {
 	if err != nil {
 		return err
 	}
-	go func() {
+	log.Println("Allocate Init")
+	go func(peernode *peer.Peer) {
+		log.Println("Allocate Init2")
 		result, err := peernode.AllocateTask(&task)
-		log.Println(err)
-		log.Println(result)
-	}()
+		log.Println("Allocated", err, result)
+	}(peernode)
 	return nil
 }
 
 func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
+	log.Println("allocinit4")
 	// /task.Jumps[self.Addr] = len(task.Jumps) + 1
 	/*for _, req := range task.Reqs {
 		if ok, err := req.Comp(req.Value(), reflect.ValueOf(self).FieldByName(req.Name())); !ok || !self.Compute {
@@ -125,11 +125,12 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 	}
 	atomic.AddInt64(&self.Tasks, 1)
 	data, err := self.process(task)
+	log.Println(string(data), err)
+	result = &data
 	atomic.AddInt64(&self.Tasks, -1)
 	if err != nil {
 		return err
 	}
-	result = &data
 	return nil
 
 }

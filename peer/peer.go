@@ -38,12 +38,13 @@ func (self *Peer) GetPeers(start time.Duration) (peers []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(peers)
 	return peers, nil
 
 }
 
 func (self *Peer) AllocateTask(task *tasks.Task) (result *[]byte, err error) {
-	err = self.Connection.Call("Node.AllocateTask", true, result)
+	log.Println("allocinit5")
+	err = self.Connection.Call("Node.AllocateTask", task, result)
+	log.Println("allocinit6")
 	return result, err
 }

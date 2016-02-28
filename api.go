@@ -121,6 +121,6 @@ func api_task(w http.ResponseWriter, r *http.Request) {
 			log.Println("405 task", r.Body)
 			http.Error(w, "", http.StatusNotAcceptable)
 		}
-		log.Println(This.NewTask(task))
+		This.NewTask(task)
 	}
 }
