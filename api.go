@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/rhino1998/cluster/tasks"
 	"io"
 	"log"
 	"net/http"
@@ -108,5 +109,18 @@ func api_db_del(w http.ResponseWriter, r *http.Request) {
 		} else {
 			This.DB.DBDel(del.id, del.key)
 		}
+	}
+}
+
+func api_task(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		var task tasks.Task
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&task)
+		if err != nil {
+			log.Println("405 task", r.Body)
+			http.Error(w, "", http.StatusNotAcceptable)
+		}
+		log.Println(This.NewTask(task))
 	}
 }

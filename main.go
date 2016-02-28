@@ -58,6 +58,7 @@ func main() {
 	r.HandleFunc("/api/db/put", api_db_put)
 	r.HandleFunc("/api/db/get", api_db_get)
 	r.HandleFunc("/api/db/del", api_db_del)
+	r.HandleFunc("/api/task", api_task)
 	log.Println("whee")
 	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)
 	log.Println(s.HasMethod("Node.RouteTask"))

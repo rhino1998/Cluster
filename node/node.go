@@ -10,8 +10,10 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
-	"reflect"
+	//"reflect"
+	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -78,12 +80,25 @@ func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info)
 }
 
 func (self *Node) process(task *tasks.Task) ([]byte, error) {
-	return exec.Command(task.Loc).Output()
+	return exec.Command(fmt.Sprintf("%v\\%v", task.Loc, task.FileName)).Output()
 }
 
-func (self *Node) RouteTask(r *http.Request, task *tasks.Task, result *[]byte) error {
-	task.Jumps[self.Addr] = len(task.Jumps) + 1
-	for _, req := range task.Reqs {
+func (self *Node) NewTask(task tasks.Task) error {
+	peernode, err := self.Peers.GetAPeer()
+	if err != nil {
+		return err
+	}
+	go func() {
+		result, err := peernode.AllocateTask(&task)
+		log.Println(err)
+		log.Println(result)
+	}()
+	return nil
+}
+
+func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
+	// /task.Jumps[self.Addr] = len(task.Jumps) + 1
+	/*for _, req := range task.Reqs {
 		if ok, err := req.Comp(req.Value(), reflect.ValueOf(self).FieldByName(req.Name())); !ok || !self.Compute {
 			if err != nil {
 				return err
@@ -97,8 +112,20 @@ func (self *Node) RouteTask(r *http.Request, task *tasks.Task, result *[]byte) e
 				return err
 			}
 		}
+	}*/
+	if !self.Compute || self.Tasks+1 > 1 {
+		peernode, err := self.Peers.GetAPeer()
+		if err != nil {
+			return err
+		}
+		result, err = peernode.AllocateTask(task)
+		if err != nil {
+			return err
+		}
 	}
+	atomic.AddInt64(&self.Tasks, 1)
 	data, err := self.process(task)
+	atomic.AddInt64(&self.Tasks, -1)
 	if err != nil {
 		return err
 	}

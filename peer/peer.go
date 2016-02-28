@@ -44,6 +44,6 @@ func (self *Peer) GetPeers(start time.Duration) (peers []string, err error) {
 }
 
 func (self *Peer) AllocateTask(task *tasks.Task) (result *[]byte, err error) {
-	err = self.Connection.Call("Node.Allocate", true, &result)
+	err = self.Connection.Call("Node.AllocateTask", true, result)
 	return result, err
 }
