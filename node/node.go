@@ -90,7 +90,7 @@ func (self *Node) NewTask(task tasks.Task) error {
 	go func(peernode *peer.Peer) {
 		log.Println("Allocate Init2")
 		result, err := peernode.AllocateTask(&task)
-		log.Println("Allocated", err, result)
+		log.Println("Allocated", err, string(result))
 	}(peernode)
 	return nil
 }
@@ -118,7 +118,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 		if err != nil {
 			return err
 		}
-		result, err = peernode.AllocateTask(task)
+		*result, err = peernode.AllocateTask(task)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 	atomic.AddInt64(&self.Tasks, 1)
 	data, err := self.process(task)
 	log.Println(string(data), err)
-	result = &data
+	*result = data
 	atomic.AddInt64(&self.Tasks, -1)
 	if err != nil {
 		return err

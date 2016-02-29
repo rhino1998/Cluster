@@ -38,6 +38,7 @@ func init_node() {
 	}
 	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port), "")
 	kvstore.Start()
+	kvstore.StartJson()
 	layer := db.NewTransactionLayer(kvstore)
 	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, layer, 20*time.Second)
 	if Config.DHTSeed != "" {
@@ -46,7 +47,7 @@ func init_node() {
 }
 
 func main() {
-	//initForward()
+	initForward()
 	init_node()
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")

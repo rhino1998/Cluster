@@ -1,2 +1,4 @@
 @ECHO OFF
-echo 1
+for /l %%x in (1, 1, 30) do (
+   echo|set /p=%%x
+)
