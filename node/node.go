@@ -84,8 +84,10 @@ func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info)
 
 func (self *Node) process(task *tasks.Task) ([]byte, error) {
 	log.Printf("Added %v to Processing Queue", task.Name)
+	atomic.AddInt64(&self.Tasks, 1)
 	self.processlock.Lock()
 	defer self.processlock.Unlock()
+	defer atomic.AddInt64(&self.Tasks, -1)
 	log.Printf("Processing %v", task.Name)
 	return exec.Command(fmt.Sprintf("%v", task.FileName)).Output()
 }
@@ -136,10 +138,8 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 				}
 			}
 		} else {
-			atomic.AddInt64(&self.Tasks, 1)
 			data, err := self.process(task)
 			*result = data
-			atomic.AddInt64(&self.Tasks, -1)
 			if err == nil {
 				log.Println("Successful Process")
 				return err

@@ -18,5 +18,5 @@ func main() {
 			}
 		})()
 	}
-	<-time.After(8 * time.Second)
+	<-time.After(60 * time.Second)
 }

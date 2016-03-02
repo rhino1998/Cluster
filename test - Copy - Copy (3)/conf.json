@@ -5,7 +5,7 @@
 			"RPC":
 				{
 					"description":"RPC %s Port %d",
-					"port": 6002,
+					"port": 6001,
 					"protocols":
 						[
 							"tcp",
@@ -15,7 +15,7 @@
 			"DHT":
 				{
 					"description":"DHT %s Port %d",
-					"port": 6003,
+					"port": 6002,
 					"protocols":
 						[	
 							"tcp",
@@ -26,7 +26,7 @@
 	"maxtasks": 50,
 	"dhtseed": "108.56.251.125:2009",
 	"peerseed": "108.56.251.125:2008", //comment test
-	"maxtasks": 5,
+	"maxtasks": 10,
 	"compute" : true,
 	"externalip": "108.31.152.169"
 }
