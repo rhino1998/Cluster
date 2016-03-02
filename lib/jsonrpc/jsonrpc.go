@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gorilla/rpc/json"
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -33,7 +33,7 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	if err != nil {
 		return err
 	}
-	var bodyBytes []byte
+	/*var bodyBytes []byte
 	if resp.Body != nil {
 		bodyBytes, _ = ioutil.ReadAll(resp.Body)
 	}
@@ -41,7 +41,7 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	// Use the content
 	bodyString := string(bodyBytes)
-	log.Println(bodyString)
+	log.Println(bodyString)*/
 	defer resp.Body.Close()
 	err = json.DecodeClientResponse(resp.Body, reply)
 	if err != nil {

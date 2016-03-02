@@ -18,19 +18,21 @@ import (
 )
 
 type Node struct {
+	processlock *sync.RWMutex
 	sync.RWMutex
-	DB    *db.TransactionLayer
-	Tasks int64
-	TTL   time.Duration
-	Peers *peers.Peers
+	DB       *db.TransactionLayer
+	Tasks    int64
+	MaxTasks int
+	TTL      time.Duration
+	Peers    *peers.Peers
 	peer.Peer
 	peerCache            *cache2go.CacheTable
 	LocalIP              string
 	lastroutetableupdate time.Time
 }
 
-func NewNode(extip, locip string, description info.Info, layer *db.TransactionLayer, ttl time.Duration) *Node {
-	return &Node{Peers: peers.NewPeers(ttl), Peer: *peer.ThisPeer(extip, description), LocalIP: locip, lastroutetableupdate: time.Now(), Tasks: 0, DB: layer, TTL: ttl, peerCache: cache2go.Cache("PeerCache")}
+func NewNode(extip, locip string, description info.Info, layer *db.TransactionLayer, ttl time.Duration, maxtasks int) *Node {
+	return &Node{Peers: peers.NewPeers(ttl), Peer: *peer.ThisPeer(extip, description), LocalIP: locip, lastroutetableupdate: time.Now(), Tasks: 0, DB: layer, TTL: ttl, peerCache: cache2go.Cache("PeerCache"), MaxTasks: maxtasks, processlock: &sync.RWMutex{}}
 }
 
 func (self *Node) GreetPeer(addr string) error {
@@ -41,7 +43,7 @@ func (self *Node) GreetPeer(addr string) error {
 	}
 	self.Peers.AddPeer(newpeer)
 	self.Peers.Clean(self.Addr)
-	newpeernodeaddrs, err := newpeer.GetPeers(self.TTL)
+	newpeernodeaddrs, err := newpeer.GetPeers(12)
 	if err == nil {
 		for _, newpeernodeaddr := range newpeernodeaddrs {
 			if !self.Peers.Exists(newpeernodeaddr) && newpeernodeaddr != self.Addr {
@@ -53,11 +55,15 @@ func (self *Node) GreetPeer(addr string) error {
 	return nil
 }
 
-func (self *Node) GetPeers(r *http.Request, start *time.Duration, peerList *[]string) error {
-	temp := self.Peers.Items()
-	peers := make([]string, len(temp), cap(temp))
-	for i, peer := range temp {
-		peers[i] = peer.Addr
+func (self *Node) GetPeers(r *http.Request, x *int, peerList *[]string) error {
+	temp := self.Peers.FirstX(*x)
+	peers := make([]string, 0, cap(temp))
+	if len(temp) > 0 {
+		for _, peernode := range temp {
+			if peernode != nil {
+				peers = append(peers, peernode.Addr)
+			}
+		}
 	}
 	*peerList = peers
 	return nil
@@ -77,26 +83,32 @@ func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info)
 }
 
 func (self *Node) process(task *tasks.Task) ([]byte, error) {
-	log.Println("Processing")
+	log.Printf("Added %v to Processing Queue", task.Name)
+	self.processlock.Lock()
+	defer self.processlock.Unlock()
+	log.Printf("Processing %v", task.Name)
 	return exec.Command(fmt.Sprintf("%v", task.FileName)).Output()
 }
 
 func (self *Node) NewTask(task tasks.Task) error {
-	peernode, err := self.Peers.GetAPeer()
-	if err != nil {
-		return err
-	}
-	log.Println("Allocate Init")
-	go func(peernode *peer.Peer) {
-		log.Println("Allocate Init2")
-		result, err := peernode.AllocateTask(&task)
-		log.Println("Allocated", err, string(result))
-	}(peernode)
+	log.Println("Added to queue")
+	go func() {
+		for true {
+			peernode, err := self.Peers.GetAPeer()
+			if err == nil {
+				log.Println("Allocate Init2")
+				result, err := peernode.AllocateTask(&task)
+				if err == nil {
+					log.Println("Allocated", err, string(result))
+					return
+				}
+			}
+		}
+	}()
 	return nil
 }
 
 func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
-	log.Println("allocinit4")
 	// /task.Jumps[self.Addr] = len(task.Jumps) + 1
 	/*for _, req := range task.Reqs {
 		if ok, err := req.Comp(req.Value(), reflect.ValueOf(self).FieldByName(req.Name())); !ok || !self.Compute {
@@ -113,24 +125,28 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 			}
 		}
 	}*/
-	if !self.Compute || self.Tasks+1 > 1 {
-		peernode, err := self.Peers.GetAPeer()
-		if err != nil {
-			return err
+	for true {
+		if !self.Compute || int(self.Tasks+1) > self.MaxTasks {
+			peernode, err := self.Peers.GetAPeer()
+			if err == nil {
+				log.Printf("Allocated from %v to %v", self.Addr, peernode.Addr)
+				*result, err = peernode.AllocateTask(task)
+				if err == nil {
+					log.Printf("Recieved from %v", peernode.Addr)
+					return nil
+				}
+			}
+		} else {
+			atomic.AddInt64(&self.Tasks, 1)
+			data, err := self.process(task)
+			*result = data
+			atomic.AddInt64(&self.Tasks, -1)
+			if err == nil {
+				log.Println("Successful Process")
+				return err
+			}
+			log.Println(err)
 		}
-		*result, err = peernode.AllocateTask(task)
-		if err != nil {
-			return err
-		}
-	}
-	atomic.AddInt64(&self.Tasks, 1)
-	data, err := self.process(task)
-	log.Println(string(data), err)
-	*result = data
-	atomic.AddInt64(&self.Tasks, -1)
-	if err != nil {
-		return err
 	}
 	return nil
-
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/reqs"
 	//"log"
+	"math/rand"
 	"sync"
 	"time"
 	//"net"
@@ -46,6 +47,34 @@ func (self *Peers) GetPeer(addr string) (*peer.Peer, error) {
 	return peerNode, nil
 }
 
+func (self *Peers) LastX(x int) []*peer.Peer {
+	self.RLock()
+	defer self.RUnlock()
+	temp := make([]*peer.Peer, 0, x)
+	itemsfound := make(map[string]int)
+	for _, addr := range self.index.LastX(x).Items() {
+		if _, found := itemsfound[string(addr.Value())]; !found {
+			temp = append(temp, self.peers[string(addr.Value())])
+			itemsfound[string(addr.Value())] = 1
+		}
+	}
+	return temp
+}
+
+func (self *Peers) FirstX(x int) []*peer.Peer {
+	self.RLock()
+	defer self.RUnlock()
+	temp := make([]*peer.Peer, 0, x)
+	itemsfound := make(map[string]int)
+	for _, addr := range self.index.FirstX(x).Items() {
+		if _, found := itemsfound[string(addr.Value())]; !found {
+			temp = append(temp, self.peers[string(addr.Value())])
+			itemsfound[string(addr.Value())] = 1
+		}
+	}
+	return temp
+}
+
 //checks whether peer exists by address
 func (self *Peers) Exists(addr string) bool {
 	self.RLock()
@@ -57,8 +86,8 @@ func (self *Peers) Exists(addr string) bool {
 func (self *Peers) GetAPeer() (*peer.Peer, error) {
 	self.RLock()
 	defer self.RUnlock()
-	for _, addr := range self.data.Keys() {
-		return self.peers[addr], nil
+	if len(self.peers) >= 1 {
+		return self.peers[self.data.Keys()[rand.Intn(len(self.peers))]], nil
 	}
 	return nil, NoValidPeers
 }

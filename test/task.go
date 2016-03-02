@@ -1,13 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+	"runtime"
 	"time"
 )
 
 func main() {
-	for i := 0; i < 10; i++ {
-		time.Sleep(1 * time.Second)
-		fmt.Print(i)
+
+	flag.Parse()
+	c := runtime.NumCPU() * 2
+	runtime.GOMAXPROCS(1)
+	for ; c > 0; c-- {
+		go (func() {
+			for {
+				time.Now()
+			}
+		})()
 	}
+	<-time.After(8 * time.Second)
 }

@@ -27,6 +27,6 @@
 	"dhtseed": "",
 	"peerseed": "", //comment test
 	"maxtasks": 5,
-	"compute" : true,
+	"compute" : false,
 	"externalip": "108.31.152.169"
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/lib/jsonrpc"
 	"github.com/rhino1998/cluster/tasks"
-	"log"
+	//"log"
 	"sync"
 	"time"
 )
@@ -33,8 +33,8 @@ func (self *Peer) Ping() (time.Time, error) {
 	return time.Now(), nil
 }
 
-func (self *Peer) GetPeers(start time.Duration) (peers []string, err error) {
-	err = self.Connection.Call("Node.GetPeers", &start, &peers)
+func (self *Peer) GetPeers(x int) (peers []string, err error) {
+	err = self.Connection.Call("Node.GetPeers", &x, &peers)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,6 @@ func (self *Peer) GetPeers(start time.Duration) (peers []string, err error) {
 }
 
 func (self *Peer) AllocateTask(task *tasks.Task) (result []byte, err error) {
-	log.Println("allocinit5")
 	err = self.Connection.Call("Node.AllocateTask", task, &result)
-	log.Println("allocinit6")
 	return result, err
 }

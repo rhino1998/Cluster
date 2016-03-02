@@ -218,6 +218,26 @@ func (self *TimeList) RemoveBefore(index time.Time) {
 	self.vals = self.vals[i:]
 }
 
+func (self *TimeList) FirstX(x int) *TimeList {
+	if len(self.vals) < x {
+		return &TimeList{vals: self.vals, start: self.start, end: self.end}
+	}
+	var temp []Item
+	copy(temp, self.vals[:x-1])
+	return &TimeList{vals: temp, start: self.start, end: temp[0].index}
+
+}
+
+func (self *TimeList) LastX(x int) *TimeList {
+	if len(self.vals) < x {
+		return &TimeList{vals: self.vals, start: self.start, end: self.end}
+	}
+	var temp []Item
+	copy(temp, self.vals[len(self.vals)-x:])
+	return &TimeList{vals: temp, start: temp[len(temp)-1].index, end: self.end}
+
+}
+
 //Retuns a new ItemList containing items after given time
 func (self *TimeList) After(index time.Time) *TimeList {
 	self.RLock()
@@ -255,6 +275,9 @@ func (self *TimeList) FirstAfter(index time.Time) *Item {
 	self.RLock()
 	defer self.RUnlock()
 	i := self.search(index)
+	if index.Before(self.start) {
+		return &self.vals[0]
+	}
 	if i == -1 {
 		return nil
 	}
@@ -266,10 +289,13 @@ func (self *TimeList) FirstBefore(index time.Time) *Item {
 	self.RLock()
 	defer self.RUnlock()
 	i := self.search(index)
+	if index.After(self.end) {
+		return &self.vals[len(self.vals)-1]
+	}
 	if i == -1 || i == 0 {
 		return nil
 	}
-	return &self.vals[i-1]
+	return &self.vals[i]
 }
 
 func (self *TimeList) grow() {

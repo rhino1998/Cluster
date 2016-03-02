@@ -14,6 +14,7 @@ import (
 	"github.com/rhino1998/god/dhash"
 	"log"
 	"net/http"
+	"runtime"
 	"time"
 )
 
@@ -40,14 +41,14 @@ func init_node() {
 	kvstore.Start()
 	kvstore.StartJson()
 	layer := db.NewTransactionLayer(kvstore)
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, layer, 20*time.Second)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, layer, 20*time.Second, Config.MaxTasks)
 	if Config.DHTSeed != "" {
 		This.DB.DB.MustJoin(Config.DHTSeed)
 	}
 }
 
 func main() {
-	initForward()
+	//initForward()
 	init_node()
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
@@ -69,13 +70,18 @@ func main() {
 	for {
 		time.Sleep(5 * time.Second)
 		go func() {
-
 			peernode, err := This.Peers.GetAPeer()
 			if err != nil {
 				log.Println(err)
-				return
+				if Config.PeerSeed != "" {
+					This.GreetPeer(Config.PeerSeed)
+				} else {
+					log.Println("waiting for peers")
+				}
+			} else {
+				log.Println(runtime.NumGoroutine(), This.Tasks)
+				This.GreetPeer(peernode.Addr)
 			}
-			This.GreetPeer(peernode.Addr)
 		}()
 	}
 
