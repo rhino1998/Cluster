@@ -96,7 +96,6 @@ func (self *Node) NewTask(task tasks.Task) error {
 		for true {
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil {
-				log.Println("Allocate Init2")
 				result, err := peernode.AllocateTask(&task)
 				if err == nil {
 					log.Println("Allocated", err, string(result))

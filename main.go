@@ -48,6 +48,7 @@ func init_node() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(1)
 	//initForward()
 	init_node()
 	s := rpc.NewServer()
@@ -79,7 +80,6 @@ func main() {
 					log.Println("waiting for peers")
 				}
 			} else {
-				log.Println(runtime.NumGoroutine(), This.Tasks)
 				This.GreetPeer(peernode.Addr)
 			}
 		}()
