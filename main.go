@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
 	"github.com/rhino1998/cluster/bench"
-	"github.com/rhino1998/cluster/db"
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/node"
 	//"github.com/rhino1998/cluster/peer"
@@ -40,10 +39,9 @@ func init_node() {
 	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port), "")
 	kvstore.Start()
 	kvstore.StartJson()
-	layer := db.NewTransactionLayer(kvstore)
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, layer, 20*time.Second, Config.MaxTasks)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, kvstore, 20*time.Second, Config.MaxTasks)
 	if Config.DHTSeed != "" {
-		This.DB.DB.MustJoin(Config.DHTSeed)
+		This.DB.MustJoin(Config.DHTSeed)
 	}
 }
 
@@ -58,9 +56,6 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/rpc", s)
 	r.HandleFunc("/api/peers", api_peers)
-	r.HandleFunc("/api/db/put", api_db_put)
-	r.HandleFunc("/api/db/get", api_db_get)
-	r.HandleFunc("/api/db/del", api_db_del)
 	r.HandleFunc("/api/task", api_task)
 	log.Println("whee")
 	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)

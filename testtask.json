@@ -1,6 +1,6 @@
 {
-	"id" : [],
 	"name" : "floop",
 	"filename": "task.exe",
-	"loc": "."
+	"loc": ".",
+	"value": 34
 }

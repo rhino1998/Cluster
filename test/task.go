@@ -1,14 +1,12 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"runtime"
 	"time"
 )
 
 func main() {
-
-	flag.Parse()
 	c := runtime.NumCPU() * 2
 	runtime.GOMAXPROCS(1)
 	for ; c > 0; c-- {
@@ -19,4 +17,5 @@ func main() {
 		})()
 	}
 	<-time.After(60 * time.Second)
+	fmt.Print(time.Now())
 }
