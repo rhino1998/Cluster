@@ -90,7 +90,7 @@ func (self *Node) process(task *tasks.Task) ([]byte, error) {
 	self.processlock.Lock()
 	defer self.processlock.Unlock()
 	defer atomic.AddInt64(&self.TaskValue, int64(-task.Value))
-	log.Printf("Processing %v", task.Id, self.TaskValue)
+	log.Printf("Processing %v %v %v", string(task.Id), self.TaskValue, task.Value)
 	return exec.Command(fmt.Sprintf("%v", task.FileName)).Output()
 }
 
@@ -131,7 +131,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 		}
 	}*/
 	for true {
-		if !self.Compute || int(self.TaskValue+1) > 10000 {
+		if !self.Compute || int(self.TaskValue+int64(task.Value)) > 10000 {
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil {
 				log.Printf("Allocated %v from %v to %v", string(task.Id), self.Addr, peernode.Addr)

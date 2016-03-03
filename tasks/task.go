@@ -16,5 +16,5 @@ type Task struct {
 }
 
 func NewTask(name, loc, filename string, value int) Task {
-	return Task{Id: []byte(util.NewUUID()), Jumps: make(map[string]int), FileName: filename, Name: name, Loc: loc}
+	return Task{Id: []byte(util.NewUUID()), Jumps: make(map[string]int), FileName: filename, Name: name, Loc: loc, Value: value}
 }

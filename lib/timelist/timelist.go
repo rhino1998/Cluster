@@ -163,6 +163,9 @@ func (self *TimeList) Insert(value []byte, index time.Time) {
 func (self *TimeList) PopAfter(index time.Time) (*TimeList, error) {
 	self.Lock()
 	defer self.Unlock()
+	if len(self.vals) == 0 {
+		return self, nil
+	}
 	if len(self.vals) == 1 && self.vals[0].Time().After(index) {
 		self.vals = make([]Item, 0)
 		return &TimeList{vals: self.vals, start: self.vals[0].index, end: self.end}, nil
@@ -181,6 +184,9 @@ func (self *TimeList) PopAfter(index time.Time) (*TimeList, error) {
 func (self *TimeList) PopBefore(index time.Time) (*TimeList, error) {
 	self.Lock()
 	defer self.Unlock()
+	if len(self.vals) == 0 {
+		return self, nil
+	}
 	if len(self.vals) == 1 && self.vals[0].Time().Before(index) {
 		self.vals = make([]Item, 0)
 		return &TimeList{vals: self.vals, start: self.start, end: self.vals[0].index}, nil
