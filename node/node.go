@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os/exec"
 	//"reflect"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -131,6 +132,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 			}
 		}
 	}*/
+	fails := 0
 	for true {
 		if !self.Compute || int(self.TaskValue+int64(task.Value)) > 10000 {
 			peernode, err := self.Peers.GetAPeer()
@@ -148,6 +150,11 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 				if err == nil {
 					log.Printf("Recieved %v from %v", string(task.Id), peernode.Addr)
 					return nil
+				}
+			} else {
+				fails++
+				if fails > 10 {
+					return errors.New("Failed too many times")
 				}
 			}
 		} else {
