@@ -17,6 +17,7 @@ type newtask struct {
 	FileName string `json:"filename"`
 	Loc      string `json:"loc"`
 	Value    int    `json:"value"`
+	Args     string `json:"args"`
 }
 
 func api_peers(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,6 @@ func api_task(w http.ResponseWriter, r *http.Request) {
 			log.Println("405 task", r.Body)
 			http.Error(w, "", http.StatusNotAcceptable)
 		}
-		This.NewTask(tasks.NewTask(task.Name, task.Loc, task.FileName, task.Value))
+		This.NewTask(tasks.NewTask(task.Name, task.Loc, task.FileName, task.Args, task.Value))
 	}
 }
