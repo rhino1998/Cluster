@@ -114,6 +114,7 @@ func (self *Node) NewTask(task tasks.Task) error {
 }
 
 func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
+	task.Add(self.Addr)
 	// /task.Jumps[self.Addr] = len(task.Jumps) + 1
 	/*for _, req := range task.Reqs {
 		if ok, err := req.Comp(req.Value(), reflect.ValueOf(self).FieldByName(req.Name())); !ok || !self.Compute {
@@ -133,7 +134,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 	for true {
 		if !self.Compute || int(self.TaskValue+int64(task.Value)) > 10000 {
 			peernode, err := self.Peers.GetAPeer()
-			if err == nil {
+			if err == nil && !task.Visited(peernode.Addr) {
 				log.Printf("Allocated %v from %v to %v", string(task.Id), self.Addr, peernode.Addr)
 				if int(self.RoutedTasks+1) > self.MaxTasks {
 					self.processlock.Lock()
