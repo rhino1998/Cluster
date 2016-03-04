@@ -9,6 +9,7 @@ import (
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/node"
 	//"github.com/rhino1998/cluster/peer"
+	"flag"
 	"github.com/rhino1998/cluster/util"
 	"github.com/rhino1998/god/dhash"
 	"log"
@@ -46,8 +47,14 @@ func init_node() {
 }
 
 func main() {
+	forwardport := flag.Bool("f", false, "forward or not")
+	flag.Parse()
 	runtime.GOMAXPROCS(1)
-	//initForward()
+	log.Println(*forwardport)
+	log.Println(flag.Args())
+	if *forwardport {
+		initForward()
+	}
 	init_node()
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
