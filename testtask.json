@@ -3,5 +3,5 @@
 	"filename": "task.exe",
 	"loc": ".",
 	"value": 3400,
-	"args": ""
+	"args": ["hi", "bye"]
 }

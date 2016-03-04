@@ -91,7 +91,7 @@ func (self *Node) process(task *tasks.Task) ([]byte, error) {
 	defer self.processlock.Unlock()
 	defer atomic.AddInt64(&self.TaskValue, int64(-task.Value))
 	log.Printf("Processing %v %v %v", string(task.Id), self.TaskValue, task.Value)
-	return exec.Command(fmt.Sprintf("%v %v", task.FileName, task.Args)).Output()
+	return exec.Command(fmt.Sprintf("%v", task.FileName), task.Args...).Output()
 }
 
 func (self *Node) NewTask(task tasks.Task) error {

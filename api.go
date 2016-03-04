@@ -14,10 +14,10 @@ type newtask struct {
 	Jumps map[string]int `json:"jumps"`
 	Name  string         `json:"name"`
 	//Reqs     //[]reqs.Req
-	FileName string `json:"filename"`
-	Loc      string `json:"loc"`
-	Value    int    `json:"value"`
-	Args     string `json:"args"`
+	FileName string   `json:"filename"`
+	Loc      string   `json:"loc"`
+	Value    int      `json:"value"`
+	Args     []string `json:"args"`
 }
 
 func api_peers(w http.ResponseWriter, r *http.Request) {

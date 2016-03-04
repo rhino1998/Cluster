@@ -9,14 +9,14 @@ type Task struct {
 	Id    []byte         `json:"id"`
 	Jumps map[string]int `json:"jumps"`
 	Name  string         `json:"name"`
-	Args  string         `json:"args"`
+	Args  []string       `json:"args"`
 	//Reqs     //[]reqs.Req
 	FileName string `json:"filename"`
 	Loc      string `json:"loc"`
 	Value    int    `json:"value"`
 }
 
-func NewTask(name, loc, filename, args string, value int) Task {
+func NewTask(name, loc, filename string, args []string, value int) Task {
 	return Task{Id: []byte(util.NewUUID()), Jumps: make(map[string]int), FileName: filename, Name: name, Loc: loc, Value: value, Args: args}
 }
 
