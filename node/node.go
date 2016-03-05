@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rhino1998/cluster/lib/godmutex"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -40,6 +41,56 @@ type Node struct {
 	lastroutetableupdate time.Time
 }
 
+func (self *Node) incrementvalue(key []byte, amount int) {
+	self.DBMutex.Lock(key)
+	var num int
+	var err error
+	value, found := self.DB.Get(key)
+	if !found {
+		self.DB.SPut(key, []byte("0"))
+		num = 0
+	} else {
+		num, err = strconv.Atoi(string(value))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+	self.DB.SPut(key, []byte(strconv.Itoa(num+amount)))
+	value, _ = self.DB.Get(key)
+	self.DBMutex.Unlock(key)
+	log.Println(string(value))
+}
+
+func (self *Node) incrementTotalTasks() {
+	go func() {
+		atomic.AddInt64(&self.TotalTasks, 1)
+		log.Println("hi")
+		self.incrementvalue([]byte("TotalTasks"), 1)
+	}()
+}
+
+func (self *Node) incrementTotalRoutedTasks() {
+	go func() {
+		atomic.AddInt64(&self.TotalRoutedTasks, 1)
+		self.incrementvalue([]byte("TotalRoutedTasks"), 1)
+	}()
+}
+
+func (self *Node) incrementTotalRouteFailures() {
+	go func() {
+		atomic.AddInt64(&self.TotalRouteFailures, 1)
+		self.incrementvalue([]byte("TotalRouteFailures"), 1)
+	}()
+}
+
+func (self *Node) incrementTotalTaskFailures() {
+	go func() {
+		atomic.AddInt64(&self.TotalTaskFailures, 1)
+		self.incrementvalue([]byte("TotalTaskFailures"), 1)
+	}()
+}
+
 func NewNode(extip, locip string, description info.Info, kvstoreaddr string, ttl time.Duration, maxtasks int) *Node {
 	clientconn := client.MustConn(kvstoreaddr)
 	return &Node{
@@ -54,6 +105,8 @@ func NewNode(extip, locip string, description info.Info, kvstoreaddr string, ttl
 		MaxTasks:             maxtasks,
 		TotalTasks:           0,
 		TotalRoutedTasks:     0,
+		TotalRouteFailures:   0,
+		TotalTaskFailures:    0,
 		processlock:          &sync.RWMutex{},
 		DBMutex:              godmutex.NewRWMutex(clientconn, "mutex", extip),
 		RoutedTasks:          0}
@@ -123,6 +176,7 @@ func (self *Node) NewTask(task tasks.Task) error {
 		for true {
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil {
+				log.Println(err)
 				log.Println(string(task.Id))
 				result, err := peernode.AllocateTask(&task)
 				if err == nil {
@@ -137,41 +191,21 @@ func (self *Node) NewTask(task tasks.Task) error {
 
 func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
 	task.Add(self.Addr)
-	// /task.Jumps[self.Addr] = len(task.Jumps) + 1
-	/*for _, req := range task.Reqs {
-		if ok, err := req.Comp(req.Value(), reflect.ValueOf(self).FieldByName(req.Name())); !ok || !self.Compute {
-			if err != nil {
-				return err
-			}
-			peernode, err := self.Peers.BestMatch(task.Reqs)
-			if err != nil {
-				return err
-			}
-			result, err = peernode.AllocateTask(task)
-			if err != nil {
-				return err
-			}
-		}
-	}*/
 	fails := 0
 	for true {
 		if !self.Compute || int(self.TaskValue+int64(task.Value)) > 10000 {
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil && !task.Visited(peernode.Addr) {
 				log.Printf("Allocated %v from %v to %v", string(task.Id), self.Addr, peernode.Addr)
-				if int(self.RoutedTasks+1) > self.MaxTasks {
-					self.processlock.Lock()
-				}
 				atomic.AddInt64(&self.RoutedTasks, 1)
 				*result, err = peernode.AllocateTask(task)
 				atomic.AddInt64(&self.RoutedTasks, -1)
-				if int(self.RoutedTasks+1) > self.MaxTasks {
-					self.processlock.Unlock()
-				}
 				if err == nil {
+					self.incrementTotalRoutedTasks()
 					log.Printf("Recieved %v from %v", string(task.Id), peernode.Addr)
 					return nil
 				}
+				self.incrementTotalRouteFailures()
 			} else {
 				fails++
 				if fails > 10 {
@@ -182,9 +216,11 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 			data, err := self.process(task)
 			*result = data
 			if err == nil {
+				self.incrementTotalTasks()
 				log.Println("Successful Process")
 				return err
 			}
+			self.incrementTotalTaskFailures()
 			log.Println(err)
 		}
 	}
