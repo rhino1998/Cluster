@@ -37,13 +37,14 @@ func init_node() {
 	if err != nil {
 		log.Println(err)
 	}
+	kvstoreaddr := fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port)
 	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port), "")
 	kvstore.Start()
 	kvstore.StartJson()
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, kvstore, 20*time.Second, Config.MaxTasks)
 	if Config.DHTSeed != "" {
-		This.DB.MustJoin(Config.DHTSeed)
+		kvstore.MustJoin(Config.DHTSeed)
 	}
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, kvstoreaddr, 20*time.Second, Config.MaxTasks)
 }
 
 func main() {

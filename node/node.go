@@ -6,13 +6,14 @@ import (
 	"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/peers"
 	"github.com/rhino1998/cluster/tasks"
-	"github.com/rhino1998/god/dhash"
+	"github.com/rhino1998/god/client"
 	"log"
 	"net/http"
 	"os/exec"
 	//"reflect"
 	"errors"
 	"fmt"
+	"github.com/rhino1998/cluster/lib/godmutex"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,21 +22,41 @@ import (
 type Node struct {
 	processlock *sync.RWMutex
 	sync.RWMutex
-	DB          *dhash.Node
-	TaskValue   int64
-	RoutedTasks int64
-	MaxTasks    int
-	MaxRouted   int
-	TTL         time.Duration
-	Peers       *peers.Peers
+	DB                 *client.Conn
+	DBMutex            *godmutex.RWMutex
+	TaskValue          int64
+	RoutedTasks        int64
+	TotalTasks         int64
+	TotalRoutedTasks   int64
+	TotalRouteFailures int64
+	TotalTaskFailures  int64
+	MaxTasks           int
+	MaxRouted          int
+	TTL                time.Duration
+	Peers              *peers.Peers
 	peer.Peer
 	peerCache            *cache2go.CacheTable
 	LocalIP              string
 	lastroutetableupdate time.Time
 }
 
-func NewNode(extip, locip string, description info.Info, kvstore *dhash.Node, ttl time.Duration, maxtasks int) *Node {
-	return &Node{Peers: peers.NewPeers(ttl), Peer: *peer.ThisPeer(extip, description), LocalIP: locip, lastroutetableupdate: time.Now(), TaskValue: 0, DB: kvstore, TTL: ttl, peerCache: cache2go.Cache("PeerCache"), MaxTasks: maxtasks, processlock: &sync.RWMutex{}, RoutedTasks: 0}
+func NewNode(extip, locip string, description info.Info, kvstoreaddr string, ttl time.Duration, maxtasks int) *Node {
+	clientconn := client.MustConn(kvstoreaddr)
+	return &Node{
+		DB:                   clientconn,
+		Peers:                peers.NewPeers(ttl),
+		Peer:                 *peer.ThisPeer(extip, description),
+		LocalIP:              locip,
+		lastroutetableupdate: time.Now(),
+		TaskValue:            0,
+		TTL:                  ttl,
+		peerCache:            cache2go.Cache("PeerCache"),
+		MaxTasks:             maxtasks,
+		TotalTasks:           0,
+		TotalRoutedTasks:     0,
+		processlock:          &sync.RWMutex{},
+		DBMutex:              godmutex.NewRWMutex(clientconn, "mutex", extip),
+		RoutedTasks:          0}
 }
 
 func (self *Node) GreetPeer(addr string) error {
