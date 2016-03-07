@@ -2,6 +2,6 @@
 	"name" : "floop",
 	"filename": "task.exe",
 	"loc": ".",
-	"value": 3400,
+	"value": 30,
 	"args": ["hi", "bye"]
 }

@@ -21,12 +21,13 @@ func NewRWMutex(connection *client.Conn, mutexname, id string) *RWMutex {
 	return &RWMutex{mutexname: mutexname, connection: connection, id: id}
 }
 
-func (self *RWMutex) Lock(key []byte) error {
+func (self *RWMutex) Lock(key []byte, id string) error {
+	keyid := fmt.Sprintf("%v:%v", string(key), id)
 	keyname := []byte(fmt.Sprintf("%v:%v", string(key), self.mutexname))
 	for {
-		if val, _ := self.connection.Get(keyname); len(val) == 0 || string(val) == self.id {
-			self.connection.SPut(keyname, []byte(self.id))
-			if val, _ := self.connection.Get(keyname); string(val) == self.id {
+		if val, _ := self.connection.Get(keyname); len(val) == 0 || string(val) == keyid {
+			self.connection.SPut(keyname, []byte(keyid))
+			if val, _ := self.connection.Get(keyname); string(val) == keyid {
 				return nil
 			}
 		}
@@ -34,10 +35,11 @@ func (self *RWMutex) Lock(key []byte) error {
 	}
 }
 
-func (self *RWMutex) Unlock(key []byte) error {
+func (self *RWMutex) Unlock(key []byte, id string) error {
+	keyid := fmt.Sprintf("%v:%v", string(key), id)
 	keyname := []byte(fmt.Sprintf("%v:%v", string(key), self.mutexname))
 	for {
-		if val, found := self.connection.Get(keyname); found && string(val) == self.id {
+		if val, found := self.connection.Get(keyname); found && string(val) == keyid {
 			self.connection.Del(keyname)
 			if _, found := self.connection.Get(keyname); !found {
 				return nil

@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-	//"runtime"
-	//"time"
+	"runtime"
+	"time"
 )
 
 func main() {
-	/*c := runtime.NumCPU() * 2
+	c := runtime.NumCPU() * 2
 	runtime.GOMAXPROCS(1)
 	for ; c > 0; c-- {
 		go (func() {
@@ -17,6 +17,6 @@ func main() {
 			}
 		})()
 	}
-	<-time.After(60 * time.Second)*/
+	<-time.After(5000 * time.Millisecond)
 	fmt.Print(os.Args)
 }
