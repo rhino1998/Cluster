@@ -2,21 +2,20 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/rhino1998/cluster/forward"
 	"io/ioutil"
 	"os"
 	"regexp"
 )
 
 type Configuration struct {
-	Timeout   int                        `json:"timeout"`
-	Mappings  map[string]forward.Mapping `json:"mappings"`
-	Forwarded bool                       `json:"forwarded"`
-	PeerSeed  string                     `json:"peerseed"`
-	DHTSeed   string                     `json:"dhtseed"`
-	MaxTasks  int                        `json:"maxtasks"`
-	External  string                     `json:"externalip"`
-	Compute   bool                       `json:"compute"`
+	Timeout   int    `json:"timeout"`
+	Port      int    `json:"port"`
+	Forwarded bool   `json:"forwarded"`
+	PeerSeed  string `json:"peerseed"`
+	DHTSeed   string `json:"dhtseed"`
+	MaxTasks  int    `json:"maxtasks"`
+	External  string `json:"externalip"`
+	Compute   bool   `json:"compute"`
 }
 
 var (

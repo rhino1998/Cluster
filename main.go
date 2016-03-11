@@ -38,14 +38,14 @@ func init_node() {
 	if err != nil {
 		log.Println(err)
 	}
-	kvstoreaddr := fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port)
-	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Mappings["DHT"].Port), fmt.Sprintf("%v:%v", extip, Config.Mappings["DHT"].Port), "")
+	kvstoreaddr := fmt.Sprintf("%v:%v", extip, Config.Port+1)
+	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Port+1), fmt.Sprintf("%v:%v", extip, Config.Port+1), "")
 	kvstore.Start()
 	kvstore.StartJson()
 	if Config.DHTSeed != "" {
 		kvstore.MustJoin(Config.DHTSeed)
 	}
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, kvstoreaddr, 20*time.Second, Config.MaxTasks)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Port), fmt.Sprintf("%v:%v", locip.String(), Config.Port), *description, kvstoreaddr, 20*time.Second, Config.MaxTasks)
 }
 
 type MyServer struct {
@@ -81,7 +81,6 @@ func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(1)
 	log.Println(*forwardport)
-	log.Println(flag.Args())
 	if *forwardport {
 		initForward()
 	}
@@ -96,7 +95,7 @@ func main() {
 	r.HandleFunc("/api/task", api_task)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 	log.Println("whee")
-	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)
+	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Port), r)
 	log.Println(s.HasMethod("Node.AllocateTask"))
 	if Config.PeerSeed != "" {
 		This.GreetPeer(Config.PeerSeed)

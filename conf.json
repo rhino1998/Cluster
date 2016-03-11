@@ -1,28 +1,6 @@
 {
 	"timeout":25,
-	"mappings": 
-		{
-			"RPC":
-				{
-					"description":"RPC %s Port %d",
-					"port": 2002,
-					"protocols":
-						[
-							"tcp",
-							"udp"
-						]
-				},
-			"DHT":
-				{
-					"description":"DHT %s Port %d",
-					"port": 2003,
-					"protocols":
-						[	
-							"tcp",
-							"udp"
-						]
-				}
-		},
+	"port": 2002, //takes next 2
 	"maxtasks": 50,
 	"dhtseed": "108.56.251.125:2009",
 	"peerseed": "108.56.251.125:2008", //comment test

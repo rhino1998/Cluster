@@ -13,7 +13,7 @@ var (
 
 func initForward() {
 	nat = upnp.Discover(5 * time.Second)[0]
-	err := forward.ForwardAll(nat, Config.Mappings)
+	err := forward.Forward(nat, forward.Mapping{Ports: [...]int{Config.Port, Config.Port + 1, Config.Port + 2}, Protocols: [...]upnp.Protocol{upnp.TCP, upnp.UDP}, Description: "Cluster"})
 	if err != nil {
 		log.Printf("Port forwarding failed: %v", err)
 		log.Println(`You may have to mainually port forward or choose different ports`)
