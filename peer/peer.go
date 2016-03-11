@@ -19,12 +19,12 @@ type Peer struct {
 }
 
 func ThisPeer(addr string, description info.Info) *Peer {
-	return &Peer{Addr: addr, Connection: jsonrpc.NewClient(addr), Info: description}
+	return &Peer{Addr: addr, Connection: jsonrpc.NewClient(addr, addr), Info: description}
 }
 
 //initializes a new peer
 func NewPeer(locaddr, remaddr string, timeout time.Duration) (*Peer, error) {
-	connection := jsonrpc.NewClient(remaddr)
+	connection := jsonrpc.NewClient(locaddr, remaddr)
 	errchan := make(chan error)
 	resultchan := make(chan info.Info)
 	var description info.Info

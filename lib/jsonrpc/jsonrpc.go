@@ -16,15 +16,20 @@ type Client struct {
 	Addr   string
 }
 
-func NewClient(addr string) *Client {
+func NewClient(laddr, raddr string) *Client {
+	laddress, _ := net.ResolveTCPAddr("tcp", laddr)
+	laddress.IP = net.ParseIP("localhost")
 	return &Client{
-		Addr: fmt.Sprintf("http://%v/rpc", addr),
+		Addr: fmt.Sprintf("http://%v/rpc", raddr),
 		client: &http.Client{
 			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				DisableKeepAlives:   true,
+				MaxIdleConnsPerHost: 0,
+				Proxy:               http.ProxyFromEnvironment,
 				Dial: (&net.Dialer{
 					Timeout:   500 * time.Millisecond,
 					KeepAlive: 0,
+					LocalAddr: nil,
 				}).Dial,
 				TLSHandshakeTimeout:   3 * time.Second,
 				ExpectContinueTimeout: 500 * time.Millisecond,

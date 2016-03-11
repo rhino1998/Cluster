@@ -94,6 +94,24 @@ body {
    outline-color: #222 !important; 
 }
 
+.modal-header > .close {
+   background-color: #222 !important;
+   color: white;  
+   outline-color: #222 !important; 
+}
+
+
+.list-group-item{
+  background-color: #222 !important;
+  color: white; 
+
+}
+
+.m-x-2 {
+  margin-left: 2 !important;
+  margin-right: 2 !important;
+}
+
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none;   /* Chrome/Safari/Opera */

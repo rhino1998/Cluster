@@ -1,46 +1,38 @@
 
 <html>
-<head>
-    <title></title>
-    <script type="text/javascript" src="/js/bundle.js"></script>
-    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
-    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/main.css">
-    <script type="text/javascript">
+    <head>
+        <title></title>
+        <script type="text/javascript" src="/js/bundle.js"></script>
+        <script src="/js/jquery-latest.min.js"></script>
+        <script src="/js/jquery.validate.min.js"></script>
+        <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/css/main.css">
+        <script type="text/javascript">
 
-    var rpc = require('jrpc2');
-    var http = require('http');
-    var agent = new http.Agent({keepAlive: true});
-    var trans = new rpc.httpTransport({hostname:"108.56.251.125", port:2002, path:"/rpc", ssl:false, protocol:"http:", headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, agent: agent, family: 4});
-    var client = new rpc.Client(trans);
+        var rpc = require('jrpc2');
+        var http = require('http');
+        var agent = new http.Agent({keepAlive: true});
+        var trans = new rpc.httpTransport({hostname:"108.56.251.125", port:2002, path:"/rpc", ssl:false, protocol:"http:", headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, agent: agent, family: 4});
+        var client = new rpc.Client(trans);
 
-
-    $(document).ready(function(e) {
-        var params = [{
-            "name" : "GetScheduleData",
-            "filename": "task2.exe",
-            "loc": ".",
-            "value": 3400,
-            "args": [],
-            "jumps":{}
-        }];
-        $('#schedule').on('show.bs.modal', function (e) {
-            $("#loadingimg").hide();
-            if ($("#scheduledata").text() === "") {
-                $("#loadingimg").show();
-                client.invoke("Node.AllocateTask", params, function (err, raw) {
-                var result = atob(JSON.parse(raw).result);
-                $("#scheduledata").hide();
-                $("#loadingimg").hide();   
-                $("#scheduledata").html(err || atob(JSON.parse(raw).result));
-                $("#scheduledata").show();
-            });
-            }else{
-                $("#loadingimg").hide();
+        var scheduleride = {};
+        function formatschedule(schedule){
+            var output = '<ul class="list-group">';
+            var template = $.validator.format('<li class="list-group-item">Ride {0} at {1} to {2}</li>');
+            for(var i = 0; i < schedule.length; i++){
+                var appt = schedule[i];
+                for (var ride in appt){
+                    if (appt.hasOwnProperty(ride)){
+                        output += template(ride, appt[ride][0], appt[ride][1])
+                    }
+                }
             }
-        });
-        $("#scheduleupdate").click(function() {
+            output +="</ul>"
+            return output
+        }
+
+        $(document).ready(function(e) {
             var params = [{
                 "name" : "GetScheduleData",
                 "filename": "task2.exe",
@@ -49,163 +41,193 @@
                 "args": [],
                 "jumps":{}
             }];
-            $("#loadingimg").show();
-            client.invoke("Node.AllocateTask", params, function (err, raw) {
-                var result = atob(JSON.parse(raw).result);
-                $("#scheduledata").hide();
+            $('#schedule').on('show.bs.modal', function (e) {
                 $("#loadingimg").hide();
-                $("#scheduledata").html(err || atob(JSON.parse(raw).result));
-                $("#scheduledata").show();
-
-            })
-        });
-        
-        $("form[ajax=true]").submit(function(e) {
-            e.preventDefault();
-
-            var form_data = $(this).serialize();
-            var form_url = $(this).attr("action");
-            var form_method = $(this).attr("method").toUpperCase();
-
-
-            var method = "Node.AllocateTask";
-
-            
-
-            var params = [{
-                "name" : "floop",
-                "filename": "task.exe",
-                "loc": ".",
-                "value": 3400,
-                "args": [JSON.stringify(params)],
-                jumps:{}
-            }];
-            client.invoke(method, params, function (err, raw) {
-                var result = atob(JSON.parse(raw).result)
-                $("#loadingimg").hide();   
-                $("#result").html(err || atob(JSON.parse(raw).result));
+                if ($("#scheduledata").text() === "") {
+                    $("#loadingimg").show();
+                    client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();   
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                });
+                }else{
+                    $("#loadingimg").hide();
+                }
             });
-            
-        
+            $("#scheduleupdate").click(function() {
+                var params = [{
+                    "name" : "GetScheduleData",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [],
+                    "jumps":{}
+                }];
+                $("#loadingimg").show();
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+
+                })
+            });
+            $('#scheduleride').on('show.bs.modal', function (event) {
+              var button = $(event.relatedTarget) // Button that triggered the modal
+              var recipient = button.data('key') // Extract info from data-* attributes
+              // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+              // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+              var modal = $(this)
+              modal.find('.modal-title').text('New message to ' + recipient)
+              modal.find('.modal-body input').val(recipient)
+            })
+
+
+          //methods and parameters for batch call
         });
-
-
-      //methods and parameters for batch call
-    });
-    </script>
-    <script type="text/javascript">
-$(document).ready(function () {
-    $(".tile").height($("#tile1").width());
-    $(".carousel").height($("#tile1").width());
-    $(".item").height($("#tile1").width());
-
-    $(window).resize(function () {
-        if (this.resizeTO) clearTimeout(this.resizeTO);
-        this.resizeTO = setTimeout(function () {
-            $(this).trigger('resizeEnd');
-        }, 10);
-    });
-
-    $(window).bind('resizeEnd', function () {
+        </script>
+        <script type="text/javascript">
+    $(document).ready(function () {
         $(".tile").height($("#tile1").width());
         $(".carousel").height($("#tile1").width());
         $(".item").height($("#tile1").width());
+
+        $(window).resize(function () {
+            if (this.resizeTO) clearTimeout(this.resizeTO);
+            this.resizeTO = setTimeout(function () {
+                $(this).trigger('resizeEnd');
+            }, 10);
+        });
+
+        $(window).bind('resizeEnd', function () {
+            $(".tile").height($("#tile1").width());
+            $(".carousel").height($("#tile1").width());
+            $(".item").height($("#tile1").width());
+        });
     });
-});
-</script>
-</head>
-<body>
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="/">Example Amusement Park</a>
+    </script>
+    </head>
+    <body>
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="/">Example Amusement Park</a>
+                </div>
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav">
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="#" data-toggle="modal" data-target="#schedule">Schedule</a></li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
             </div>
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                </ul>
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#" data-toggle="modal" data-target="#schedule">Schedule</a></li>
-                </ul>
-            </div><!-- /.navbar-collapse -->
-        </div>
-    </nav>
-    <div class="container-fluid fullheight">
-        <div class="row">
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/splashmountain.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride1.html" class="tile">
-                    <p>Splash Mountain</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/itsasmallworld.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride2.html" class="tile">
-                    <p>It's A Small World</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/townsquare.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride3.html" class="tile">
-                    <p>Town Square Center Mickey</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/countrybear.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride4.html" class="tile">
-                    <p>Country Bear Jamboree</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/bigthunder.jpg) no-repeat center bottom;background-size:cover;">
-                <a href="/rides/ride5.html" class="tile">
-                    <p>Big Thunder Mountain Railroad</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/hallofpresidents.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride6.html" class="tile">
-                    <p>The Hall of Presidents</p>
-                </a>
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/peterpansflight.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride7.html" class="tile">
-                    <p>Peter Pan's Flight</p>
-                </a>        
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/minetrain.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride8.html" class="tile">
-                    <p>Seven Dwarfs Mine Train</p>
-                </a>     
-            </div>
-            <div class="image-block col-xs-4 noselect" style="background: url(/img/spacemountain.jpg) no-repeat center center;background-size:cover;">
-                <a href="/rides/ride9.html" class="tile">
-                    <p>Space Mountain</p>
-                </a>        
-            </div>
-        </div>
-    </div>
-    <!-- Modal -->
-    <div class="modal fade" id="schedule" tabindex="-1" role="dialog" aria-labelledby="schedule">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="schedule">Schedule</h4>
-          </div>
-          <div class="modal-body">
-            <div class="container row">
-                <div class+"col-xs-2 col-xs-offset-5">
-                <img id="loadingimg" src="/img/ajax-loader.gif" class="text-center"/>
-                <p id="scheduledata"></p>
+        </nav>
+        <div class="container-fluid fullheight">
+            <div class="row">
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/splashmountain.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MzI=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Splash Mountain</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/itsasmallworld.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="OA==" data-toggle="modal" data-target="#scheduleride">
+                        <p>It's A Small World</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/townsquare.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MQ==" data-toggle="modal" data-target="#scheduleride">
+                        <p>Town Square Center Mickey</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/countrybear.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MTg=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Country Bear Jamboree</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/bigthunder.jpg) no-repeat center bottom;background-size:cover;">
+                    <a href="#" class="tile" key="MzE=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Big Thunder Mountain Railroad</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/hallofpresidents.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MTc=" data-toggle="modal" data-target="#scheduleride"
+                        <p>The Hall of Presidents</p>
+                    </a>
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/peterpansflight.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MjU=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Peter Pan's Flight</p>
+                    </a>        
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/minetrain.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MjI=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Seven Dwarfs Mine Train</p>
+                    </a>     
+                </div>
+                <div class="image-block col-xs-4 noselect" style="background: url(/img/spacemountain.jpg) no-repeat center center;background-size:cover;">
+                    <a href="#" class="tile" key="MzA=" data-toggle="modal" data-target="#scheduleride">
+                        <p>Space Mountain</p>
+                    </a>        
                 </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" id="scheduleupdate">Update</button>
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+
+        <!-- Schedule Modal -->
+        <div class="modal fade" id="schedule" tabindex="-1" role="dialog" aria-labelledby="schedule">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="schedule">Schedule</h4>
+              </div>
+              <div class="modal-body">
+                <div class="container-fluid row">
+                    <div class+"col-xs-2 col-xs-offset-5 m-x-2">
+                    <div id="scheduledata"></div>
+                    </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <img id="loadingimg" src="/img/ajax-loader.gif" class="text-center"/>
+                <button type="button" class="btn btn-danger" id="clearschedule">Delete All</button>
+                <button type="button" class="btn btn-primary" id="scheduleupdate">Update</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-</body>
+
+        <!-- Schedule Modal -->
+        <div class="modal fade" id="scheduleride" tabindex="-1" role="dialog" aria-labelledby="schedule">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="schedule">Schedule</h4>
+              </div>
+              <div class="modal-body">
+                <div class="container-fluid row">
+                    <div class+"col-xs-2 col-xs-offset-5 m-x-2">
+                    <div id="scheduledata"></div>
+                    </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <img id="loadingimg" src="/img/ajax-loader.gif" class="text-center"/>
+                <button type="button" class="btn btn-primary" id="saveride">Save</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+    </body>
 </html>

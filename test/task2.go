@@ -6,8 +6,8 @@ import "fmt"
 
 func main() {
 	fmt.Println(`[
-	"RideName1": [5 , 7],
-	"RideName2": [9, 12]
-	"RideName3": [4 , 6]
+	{"RideName1": [5 , 7]},
+	{"RideName2": [9, 12]},
+	{"RideName3": [4 , 6]}
 ]`)
 }
