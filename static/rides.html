@@ -1,0 +1,102 @@
+
+<html>
+<head>
+    <title></title>
+    <script type="text/javascript" src="/js/bundle.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <script type="text/javascript">
+
+    var rpc = require('jrpc2');
+    var http = require('http');
+    $(document).ready(function(e) {
+        $("form[ajax=true]").submit(function(e) {
+            e.preventDefault();
+
+            var form_data = $(this).serialize();
+            var form_url = $(this).attr("action");
+            var form_method = $(this).attr("method").toUpperCase();
+
+
+            var agent = new http.Agent({keepAlive: true});
+            var method = "Node.AllocateTask";
+
+            var trans = new rpc.httpTransport({hostname:"108.56.251.125", port:2002, path:"/rpc", ssl:false, protocol:"http:", headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, agent: agent, family: 4});
+            var client = new rpc.Client(trans);
+            var params = [{
+                "name" : "floop",
+                "filename": "task.exe",
+                "loc": ".",
+                "value": 3400,
+                "args": [form_data],
+                jumps:{}
+            }];
+            
+
+            var params = [{
+                "name" : "floop",
+                "filename": "task.exe",
+                "loc": ".",
+                "value": 3400,
+                "args": [JSON.stringify(params)],
+                jumps:{}
+            }];
+            $("#loadingimg").show();
+            client.invoke(method, params, function (err, raw) {
+                var result = atob(JSON.parse(raw).result)
+                $("#loadingimg").hide();   
+                $("#result").html(err || atob(JSON.parse(raw).result));
+            });
+            
+        
+        });
+
+
+      //methods and parameters for batch call
+    });
+    </script>
+    <script type="text/javascript">
+$(document).ready(function () {
+    $(".tile").height($("#tile1").width());
+    $(".carousel").height($("#tile1").width());
+    $(".item").height($("#tile1").width());
+
+    $(window).resize(function () {
+        if (this.resizeTO) clearTimeout(this.resizeTO);
+        this.resizeTO = setTimeout(function () {
+            $(this).trigger('resizeEnd');
+        }, 10);
+    });
+
+    $(window).bind('resizeEnd', function () {
+        $(".tile").height($("#tile1").width());
+        $(".carousel").height($("#tile1").width());
+        $(".item").height($("#tile1").width());
+    });
+});
+</script>
+</head>
+<body>
+
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+
+<form method="post" action="/echo/html/" ajax="true">
+    
+    <span id="result"><a href="http://wp.me/p2O9K2-b">jQuery + AJAX form submit script.</a></span>
+   
+    <span>        
+        <label>Message: </label>
+        <input type="text" name="html" placeholder="Howdy..." />
+    </span>
+    
+    <span>
+        <label><img id="loadingimg" src="http://dev.cloudcell.co.uk/bin/loading.gif"/>   </label>
+        <input type="submit" value="Submit" />      
+    </span>
+    
+</form>
+</body>
+</html>

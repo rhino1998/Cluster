@@ -17,6 +17,6 @@ func main() {
 			}
 		})()
 	}
-	<-time.After(5000 * time.Millisecond)
+	<-time.After(25000 * time.Millisecond)
 	fmt.Print(os.Args)
 }

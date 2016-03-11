@@ -1,0 +1,105 @@
+.headermessage {
+  margin: 19px;
+  color: #222;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+}
+.image-block {
+    border: 3px solid #222 ;
+    background-color: #222;
+    padding: 0px;    
+    margin: 0px;
+    height:33.3%;
+    text-align: center;
+    vertical-align: bottom;
+}
+
+.image-block > .tile {
+    width: 100%;
+    height: 100%;
+    text-decoration:none;
+    font-weight: normal;
+    pointer-events: none;
+    display:none;
+    font-size: 19px;
+    padding-top: 150px;
+    background-color: rgba(3,3,3,0.0);
+    color: rgba(6,6,6,0.0);
+}
+
+.image-block:hover > .tile, .image-block:focus > .tile, .image-block:focus > .active{
+    pointer-events: auto;
+    display:inline;
+    text-decoration:none;
+    background-color: rgba(3,3,3,0.5);    
+    color: white;    
+}
+
+.image-block > .tile > p{
+    width: 100%;
+    height: 100%;
+    text-decoration:none;
+    font-weight: normal;
+    font-size: 19px;
+    padding-top: 150px;
+    background-color: rgba(3,3,3,0.0);
+    color: rgba(6,6,6,0.0);
+}
+
+.image-block:hover > .tile > p {
+    text-decoration:none;
+    background-color: rgba(3,3,3,0.5);    
+    color: white;    
+}
+
+body {
+  overflow-y:hidden;
+  background-color: #222;
+  padding-top: 49px; 
+}
+
+.header {
+    border: 3px solid #222 ;
+    background-color: #222;
+    padding: 0px;    
+    margin: 0px;
+    height:3.7%;
+    text-align: center;
+    vertical-align: bottom;
+}
+
+.modal-content {
+   background-color: #222 !important;
+   color: white;
+   border: 1px solid #222;
+}
+
+.modal-body {
+   background-color: #222 !important;
+   color: white;   
+}
+
+.modal-header{
+  border-bottom: 1px solid #222;
+}
+
+.modal-footer{
+  border-top: 1px solid #222;
+}
+
+.modal-header > .close {
+   background-color: #222 !important;
+   color: white;  
+   outline-color: #222 !important; 
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* IE/Edge */
+  user-select: none;           /* non-prefixed version, currently
+                                  not supported by any browser */
+}

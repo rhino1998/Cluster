@@ -6,6 +6,7 @@ import (
 	"github.com/rhino1998/cluster/peer"
 	"github.com/rhino1998/cluster/peers"
 	"github.com/rhino1998/cluster/tasks"
+	"github.com/rhino1998/cluster/util"
 	"github.com/rhino1998/god/client"
 	"log"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rhino1998/cluster/lib/godmutex"
+
+	"github.com/rhino1998/cluster/lib/multimutex"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -22,8 +25,10 @@ import (
 )
 
 type Node struct {
-	processlock *sync.RWMutex
-	routelock   *sync.RWMutex
+	queuelock    *multimutex.MultiMutex
+	allocatelock *multimutex.MultiMutex
+	processlock  *multimutex.MultiMutex
+	routelock    *multimutex.MultiMutex
 	sync.RWMutex
 	DB                  *client.Conn
 	DBMutex             *godmutex.RWMutex
@@ -67,81 +72,6 @@ func (self *Node) incrementvalue(key []byte, amount int64, id string) {
 	self.DBMutex.Unlock(key, id+seed)
 }
 
-func (self *Node) addTotalExecutionTime(amount int64, id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalExecutionTime, amount)
-		self.incrementvalue([]byte("TotalExecutionTime"), amount, id)
-	}()
-}
-
-func (self *Node) timeExecution(start time.Time, id string) {
-	self.addTotalExecutionTime(time.Since(start).Nanoseconds()/1000000, id)
-}
-
-func (self *Node) addTotalTaskTime(amount int64, id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalTaskTime, amount)
-		self.incrementvalue([]byte("TotalTaskTime"), amount, id)
-	}()
-}
-
-func (self *Node) timeTask(start time.Time, id string) {
-	self.addTotalTaskTime(time.Since(start).Nanoseconds()/1000000, id)
-}
-
-func (self *Node) addTotalQueueTime(amount int64, id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalQueueTime, amount)
-		self.incrementvalue([]byte("TotalQueueTime"), amount, id)
-	}()
-}
-
-func (self *Node) timeQueue(start time.Time, id string) {
-	self.addTotalQueueTime(time.Since(start).Nanoseconds()/1000000, id)
-}
-
-func (self *Node) incrementTotalTasksCompleted(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalTasksCompleted, 1)
-		self.incrementvalue([]byte("TotalTasksCompleted"), 1, id)
-	}()
-}
-
-func (self *Node) incrementTotalTasks(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalTasks, 1)
-		self.incrementvalue([]byte("TotalTasks"), 1, id)
-	}()
-}
-
-func (self *Node) decrementTotalTasks(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalTasks, -1)
-		self.incrementvalue([]byte("TotalTasks"), -1, id)
-	}()
-}
-
-func (self *Node) incrementTotalRoutedTasks(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalRoutedTasks, 1)
-		self.incrementvalue([]byte("TotalRoutedTasks"), 1, id)
-	}()
-}
-
-func (self *Node) incrementTotalRouteFailures(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalRouteFailures, 1)
-		self.incrementvalue([]byte("TotalRouteFailures"), 1, id)
-	}()
-}
-
-func (self *Node) incrementTotalTaskFailures(id string) {
-	go func() {
-		atomic.AddInt64(&self.TotalTaskFailures, 1)
-		self.incrementvalue([]byte("TotalTaskFailures"), 1, id)
-	}()
-}
-
 func NewNode(extip, locip string, description info.Info, kvstoreaddr string, ttl time.Duration, maxtasks int) *Node {
 	clientconn := client.MustConn(kvstoreaddr)
 	return &Node{
@@ -158,21 +88,23 @@ func NewNode(extip, locip string, description info.Info, kvstoreaddr string, ttl
 		TotalRoutedTasks:     0,
 		TotalRouteFailures:   0,
 		TotalTaskFailures:    0,
-		processlock:          &sync.RWMutex{},
-		routelock:            &sync.RWMutex{},
+		queuelock:            multimutex.NewMultiMutex(500),
+		allocatelock:         multimutex.NewMultiMutex(50),
+		processlock:          multimutex.NewMultiMutex(1),
+		routelock:            multimutex.NewMultiMutex(maxtasks),
 		DBMutex:              godmutex.NewRWMutex(clientconn, "mutex", extip),
 		RoutedTasks:          0}
 }
 
 func (self *Node) GreetPeer(addr string) error {
 	self.peerCache.Add(addr, 2*self.TTL, nil)
-	newpeer, err := peer.NewPeer(self.Addr, addr)
+	newpeer, err := peer.NewPeer(self.Addr, addr, 1*time.Second)
 	if err != nil {
 		return err
 	}
 	self.Peers.AddPeer(newpeer)
 	self.Peers.Clean(self.Addr)
-	newpeernodeaddrs, err := newpeer.GetPeers(12)
+	newpeernodeaddrs, err := newpeer.GetPeers(12, 1*time.Second)
 	if err == nil {
 		for _, newpeernodeaddr := range newpeernodeaddrs {
 			if !self.Peers.Exists(newpeernodeaddr) && newpeernodeaddr != self.Addr {
@@ -214,15 +146,15 @@ func (self *Node) Greet(r *http.Request, remaddr *string, desciption *info.Info)
 //Processes a given task
 func (self *Node) process(task *tasks.Task) ([]byte, error) {
 	//Times the time spent in queue and updates statistic
-	temp := time.Now()
+	//temp := time.Now()
 
 	log.Printf("Added %v to Processing Queue", string(task.Id))
 
 	//Ensures only one task executes at a time
 	self.processlock.Lock()
 	defer self.processlock.Unlock()
-	self.timeQueue(temp, string(task.Id))
-	defer self.timeExecution(time.Now(), string(task.Id))
+	//self.timeQueue(temp, string(task.Id))
+	//defer self.timeExecution(time.Now(), string(task.Id))
 
 	log.Printf("Processing %v %v %v", string(task.Id), self.TaskValue, task.Value)
 
@@ -233,12 +165,12 @@ func (self *Node) process(task *tasks.Task) ([]byte, error) {
 func (self *Node) NewTask(task tasks.Task) error {
 	temp := time.Now()
 	log.Printf("Added %v to queue", string(task.Id))
-	self.incrementTotalTasks(string(task.Id))
+	//self.incrementTotalTasks(string(task.Id))
 	task.Add(self.Addr)
 	go func() {
-		defer self.decrementTotalTasks(string(task.Id))
-		defer self.incrementTotalTasksCompleted(string(task.Id))
-		defer self.timeTask(time.Now(), string(task.Id))
+		//defer self.decrementTotalTasks(string(task.Id))
+		//defer self.incrementTotalTasksCompleted(string(task.Id))
+		//defer self.timeTask(time.Now(), string(task.Id))
 		for true {
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil {
@@ -257,27 +189,28 @@ func (self *Node) NewTask(task tasks.Task) error {
 }
 
 func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte) error {
-	temp := time.Now()
-	atomic.AddInt64(&self.RoutedTasks, 1)
-	defer atomic.AddInt64(&self.RoutedTasks, 1)
-	if int(self.RoutedTasks) >= self.Peers.Length() {
-		self.routelock.Lock()
-		self.timeQueue(temp, string(task.Id))
-		defer self.routelock.Unlock()
+	if len(task.Id) == 0 {
+		task.Id = []byte(util.NewUUID())
 	}
+	//temp := time.Now()
+	self.queuelock.Lock()
+	defer self.queuelock.Unlock()
+	//self.timeQueue(temp, string(task.Id))
 	if len(task.Jumps) == 0 {
-		self.incrementTotalTasks(string(task.Id))
-		defer self.timeTask(time.Now(), string(task.Id))
-		defer self.decrementTotalTasks(string(task.Id))
-		defer self.incrementTotalTasksCompleted(string(task.Id))
+		//self.incrementTotalTasks(string(task.Id))
+		//defer self.timeTask(time.Now(), string(task.Id))
+		//defer self.decrementTotalTasks(string(task.Id))
+		//defer self.incrementTotalTasksCompleted(string(task.Id))
 	}
 	task.Add(self.Addr)
 	fails := 0
 	for true {
-		if self.Compute && (int(self.TaskValue+int64(task.Value)) < 10000) {
+		self.allocatelock.Lock()
+		if self.Compute && (int(self.TaskValue+int64(task.Value)) < 10000 || len(task.Jumps) >= self.Peers.Length()-1) {
 			//Updates current processing value to reflect task queue
 			atomic.AddInt64(&self.TaskValue, int64(task.Value))
 			//Processes Task
+			self.allocatelock.Unlock()
 			data, err := self.process(task)
 			//Updates current processing value to reflect task queue
 			atomic.AddInt64(&self.TaskValue, int64(-task.Value))
@@ -286,27 +219,34 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 				log.Println("Successful Process")
 				return err
 			}
-			self.incrementTotalTaskFailures(string(task.Id))
+			//self.incrementTotalTaskFailures(string(task.Id))
 			log.Println(err)
 		} else {
+			self.routelock.Lock()
+			atomic.AddInt64(&self.RoutedTasks, 1)
+			defer atomic.AddInt64(&self.RoutedTasks, -1)
 			peernode, err := self.Peers.GetAPeer()
 			if err == nil && !task.Visited(peernode.Addr) {
 				log.Printf("Allocated %v from %v to %v", string(task.Id), self.Addr, peernode.Addr)
 				atomic.AddInt64(&self.RoutedTasks, 1)
+				self.allocatelock.Unlock()
 				*result, err = peernode.AllocateTask(task)
 				atomic.AddInt64(&self.RoutedTasks, -1)
 				if err == nil {
-					self.incrementTotalRoutedTasks(string(task.Id))
+					//self.incrementTotalRoutedTasks(string(task.Id))
+					self.routelock.Unlock()
 					log.Printf("Recieved %v from %v", string(task.Id), peernode.Addr)
 					return nil
 				}
-				self.incrementTotalRouteFailures(string(task.Id))
+				//self.incrementTotalRouteFailures(string(task.Id))
 			} else {
 				fails++
 				if fails > 10 {
+					self.routelock.Unlock()
 					return errors.New("Failed too many times")
 				}
 			}
+			self.routelock.Unlock()
 		}
 	}
 	*result = []byte("Error")

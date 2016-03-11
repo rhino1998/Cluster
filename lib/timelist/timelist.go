@@ -225,22 +225,32 @@ func (self *TimeList) RemoveBefore(index time.Time) {
 }
 
 func (self *TimeList) FirstX(x int) *TimeList {
+	self.RLock()
+	defer self.RUnlock()
 	if len(self.vals) < x {
 		return &TimeList{vals: self.vals, start: self.start, end: self.end}
 	}
 	var temp []Item
 	copy(temp, self.vals[:x-1])
-	return &TimeList{vals: temp, start: self.start, end: temp[0].index}
+	if len(temp) > 0 {
+		return &TimeList{vals: temp, start: self.start, end: temp[0].index}
+	}
+	return &TimeList{vals: temp, start: self.start, end: self.end}
 
 }
 
 func (self *TimeList) LastX(x int) *TimeList {
+	self.RLock()
+	defer self.RUnlock()
 	if len(self.vals) < x {
 		return &TimeList{vals: self.vals, start: self.start, end: self.end}
 	}
 	var temp []Item
 	copy(temp, self.vals[len(self.vals)-x:])
-	return &TimeList{vals: temp, start: temp[len(temp)-1].index, end: self.end}
+	if len(temp) > 0 {
+		return &TimeList{vals: temp, start: temp[len(temp)-1].index, end: self.end}
+	}
+	return &TimeList{vals: temp, start: self.start, end: self.end}
 
 }
 

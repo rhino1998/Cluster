@@ -120,7 +120,7 @@ func (self *Peers) BestMatch(reqs []reqs.Req) (*peer.Peer, error) {
 }
 
 func (self *Peers) cleanworker(locaddr, addr string) {
-	peernode, err := peer.NewPeer(locaddr, addr)
+	peernode, err := peer.NewPeer(locaddr, addr, 1*time.Second)
 	if err == nil {
 		self.peers[peernode.Addr] = peernode
 		self.data.Assign(peernode.Addr, structs.Map(peernode))

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gorilla/rpc/json"
-	"net"
 	//"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
@@ -24,9 +24,9 @@ func NewClient(addr string) *Client {
 				Proxy: http.ProxyFromEnvironment,
 				Dial: (&net.Dialer{
 					Timeout:   500 * time.Millisecond,
-					KeepAlive: 60 * time.Second,
+					KeepAlive: 0,
 				}).Dial,
-				TLSHandshakeTimeout:   5 * time.Second,
+				TLSHandshakeTimeout:   3 * time.Second,
 				ExpectContinueTimeout: 500 * time.Millisecond,
 			},
 		},
@@ -35,6 +35,7 @@ func NewClient(addr string) *Client {
 
 func (self *Client) Call(service string, args interface{}, reply interface{}) error {
 	message, err := json.EncodeClientRequest(service, args)
+	//log.Println(string(message))
 	if err != nil {
 		return err
 	}
@@ -55,8 +56,8 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	// Use the content
 	bodyString := string(bodyBytes)
-	log.Println(bodyString)*/
-	defer resp.Body.Close()
+	log.Println(bodyString)
+	defer resp.Body.Close()*/
 	err = json.DecodeClientResponse(resp.Body, reply)
 	if err != nil {
 		log.Println("Couldn't decode response. %s", err)

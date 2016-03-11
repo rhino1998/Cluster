@@ -1,0 +1,132 @@
+
+<html>
+<head>
+    <title></title>
+    <script type="text/javascript" src="/js/bundle.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <script type="text/javascript">
+
+    var rpc = require('jrpc2');
+    var http = require('http');
+    $(document).ready(function(e) {
+        $("form[ajax=true]").submit(function(e) {
+            e.preventDefault();
+
+            var form_data = $(this).serialize();
+            var form_url = $(this).attr("action");
+            var form_method = $(this).attr("method").toUpperCase();
+
+
+            var agent = new http.Agent({keepAlive: true});
+            var method = "Node.AllocateTask";
+
+            var trans = new rpc.httpTransport({hostname:"108.56.251.125", port:2002, path:"/rpc", ssl:false, protocol:"http:", headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, agent: agent, family: 4});
+            var client = new rpc.Client(trans);
+            var params = [{
+                "name" : "floop",
+                "filename": "task.exe",
+                "loc": ".",
+                "value": 3400,
+                "args": [form_data],
+                jumps:{}
+            }];
+            
+
+            var params = [{
+                "name" : "floop",
+                "filename": "task.exe",
+                "loc": ".",
+                "value": 3400,
+                "args": [JSON.stringify(params)],
+                jumps:{}
+            }];
+            $("#loadingimg").show();
+            client.invoke(method, params, function (err, raw) {
+                var result = atob(JSON.parse(raw).result)
+                $("#loadingimg").hide();   
+                $("#result").html(err || atob(JSON.parse(raw).result));
+            });
+            
+        
+        });
+
+
+      //methods and parameters for batch call
+    });
+    </script>
+    <script type="text/javascript">
+$(document).ready(function () {
+    $(".tile").height($("#tile1").width());
+    $(".carousel").height($("#tile1").width());
+    $(".item").height($("#tile1").width());
+
+    $(window).resize(function () {
+        if (this.resizeTO) clearTimeout(this.resizeTO);
+        this.resizeTO = setTimeout(function () {
+            $(this).trigger('resizeEnd');
+        }, 10);
+    });
+
+    $(window).bind('resizeEnd', function () {
+        $(".tile").height($("#tile1").width());
+        $(".carousel").height($("#tile1").width());
+        $(".item").height($("#tile1").width());
+    });
+});
+</script>
+</head>
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">Example Amusement Park</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">Separated link</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">One more separated link</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="/schedule.html">Schedule</a></li>
+                    <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Action</a></li>
+                        <li><a href="#">Another action</a></li>
+                        <li><a href="#">Something else here</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">Separated link</a></li>
+                    </ul>
+                    </li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+
+            <div class="list-group">
+                <a href="#" class="list-group-item">
+                </a>
+            </div>
+        </div>
+    </nav>
+</body>
+</html>

@@ -47,6 +47,34 @@ func init_node() {
 	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Mappings["RPC"].Port), fmt.Sprintf("%v:%v", locip.String(), Config.Mappings["RPC"].Port), *description, kvstoreaddr, 20*time.Second, Config.MaxTasks)
 }
 
+type MyServer struct {
+	r *mux.Router
+}
+
+func addDefaultHeadersFunc(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		fn(w, r)
+	}
+}
+
+func addDefaultHeadersHand(han http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		han.ServeHTTP(w, r)
+	}
+}
+
 func main() {
 	forwardport := flag.Bool("f", false, "forward or not")
 	flag.Parse()
@@ -62,9 +90,10 @@ func main() {
 	s.RegisterCodec(json.NewCodec(), "application/json;charset=UTF-8")
 	s.RegisterService(This, "")
 	r := mux.NewRouter()
-	r.Handle("/rpc", s)
+	r.HandleFunc("/rpc", addDefaultHeadersHand(s))
 	r.HandleFunc("/api/peers", api_peers)
 	r.HandleFunc("/api/task", api_task)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 	log.Println("whee")
 	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Mappings["RPC"].Port), r)
 	log.Println(s.HasMethod("Node.AllocateTask"))
@@ -72,7 +101,7 @@ func main() {
 		This.GreetPeer(Config.PeerSeed)
 	}
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(2500 * time.Millisecond)
 		go func() {
 			peernode, err := This.Peers.GetAPeer()
 			if err != nil {

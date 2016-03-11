@@ -1,7 +1,7 @@
 {
 	"name" : "floop",
-	"filename": "task.exe",
+	"filename": "task2.exe",
 	"loc": ".",
-	"value": 30,
+	"value": 3400,
 	"args": ["hi", "bye"]
 }
