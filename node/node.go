@@ -156,7 +156,7 @@ func (self *Node) process(task *tasks.Task) ([]byte, error) {
 	//self.timeQueue(temp, string(task.Id))
 	//defer self.timeExecution(time.Now(), string(task.Id))
 
-	log.Printf("Processing %v %v %v", string(task.Id), self.TaskValue, task.Value)
+	log.Printf("Processing %v %v %v", string(task.Id), atomic.LoadInt64(&self.TaskValue), task.Value)
 
 	//executes actual task
 	return exec.Command(fmt.Sprintf("%v", task.FileName), task.Args...).Output()
@@ -206,7 +206,7 @@ func (self *Node) AllocateTask(r *http.Request, task *tasks.Task, result *[]byte
 	fails := 0
 	for true {
 		self.allocatelock.Lock()
-		if self.Compute && (int(self.TaskValue+int64(task.Value)) < 10000 || len(task.Jumps) >= self.Peers.Length()-1) {
+		if self.Compute && (int(atomic.LoadInt64(&self.TaskValue)+int64(task.Value)) < 10000 || len(task.Jumps) >= self.Peers.Length()-1) {
 			//Updates current processing value to reflect task queue
 			atomic.AddInt64(&self.TaskValue, int64(task.Value))
 			//Processes Task

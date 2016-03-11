@@ -14,6 +14,7 @@ import (
 	"github.com/rhino1998/god/dhash"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"time"
 )

@@ -11,12 +11,12 @@ type MultiMutex struct {
 }
 
 func NewMultiMutex(maxlocks int) *MultiMutex {
-	queue := make(chan chan bool)
+	queue := make(chan chan bool, 50)
 	return &MultiMutex{locks: 0, maxlocks: int32(maxlocks), queue: queue}
 }
 
 func (self *MultiMutex) Lock() {
-	if self.locks+1 > self.maxlocks {
+	if atomic.LoadInt32(&self.locks)+1 > self.maxlocks {
 		cont := make(chan bool)
 		self.queue <- cont
 		select {
@@ -27,7 +27,7 @@ func (self *MultiMutex) Lock() {
 }
 
 func (self *MultiMutex) Unlock() {
-	if self.locks <= 0 {
+	if atomic.LoadInt32(&self.locks) <= 0 {
 		panic("Locking Error, locks <= 0")
 	}
 	atomic.AddInt32(&self.locks, -1)

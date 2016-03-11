@@ -9,14 +9,13 @@
         <link rel="stylesheet" href="/css/bootstrap.min.css">
         <link rel="stylesheet" href="/css/main.css">
         <script type="text/javascript">
-
+        var rideid = '';
         var rpc = require('jrpc2');
         var http = require('http');
         var agent = new http.Agent({keepAlive: true});
         var trans = new rpc.httpTransport({hostname:"108.56.251.125", port:2002, path:"/rpc", ssl:false, protocol:"http:", headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, agent: agent, family: 4});
         var client = new rpc.Client(trans);
 
-        var scheduleride = {};
         function formatschedule(schedule){
             var output = '<ul class="list-group">';
             var template = $.validator.format('<li class="list-group-item">Ride {0} at {1} to {2}</li>');
@@ -31,17 +30,30 @@
             output +="</ul>"
             return output
         }
-
+        function formatridetimes(schedule, rideid){
+            var output = '<ul class="list-group">';
+            var template = $.validator.format('<li class="list-group-item container-fluid clearfix"><div class="pull-left">Ride {0} at {1} to {2}</div><div class="pull-right"><button id="book" type="button" class="btn btn-primary" data-key="{3}" data-starttime="{1}" data-endtime="{2}">Book</button></div></li>');
+            for(var i = 0; i < schedule.length; i++){
+                var appt = schedule[i];
+                for (var ride in appt){
+                    if (appt.hasOwnProperty(ride)){
+                        output += template(ride, appt[ride][0], appt[ride][1], rideid)
+                    }
+                }
+            }
+            output +="</ul>"
+            return output
+        }
         $(document).ready(function(e) {
-            var params = [{
-                "name" : "GetScheduleData",
-                "filename": "task2.exe",
-                "loc": ".",
-                "value": 3400,
-                "args": [],
-                "jumps":{}
-            }];
             $('#schedule').on('show.bs.modal', function (e) {
+                var params = [{
+                    "name" : "GetScheduleData",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [],
+                    "jumps":{}
+                }];
                 $("#loadingimg").hide();
                 if ($("#scheduledata").text() === "") {
                     $("#loadingimg").show();
@@ -75,17 +87,87 @@
 
                 })
             });
+
+            var scheduleride = {};
             $('#scheduleride').on('show.bs.modal', function (event) {
-              var button = $(event.relatedTarget) // Button that triggered the modal
-              var recipient = button.data('key') // Extract info from data-* attributes
+                var modal = $(this)
+                var ridename = $(event.relatedTarget).text()
+                rideid = $(event.relatedTarget).data('key')
+                $("#ridetimesupdate").data('key',rideid)
+                var gettimesargs = {
+                    "rideID":rideid
+                };
+                var gettimesparams = [{
+                    "name" : "GetRideTimes",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [btoa(JSON.stringify(gettimesargs))],
+                    "jumps":{}
+                }];
+
+                // Extract info from data-* attributes
               // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
               // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
-              var modal = $(this)
-              modal.find('.modal-title').text('New message to ' + recipient)
-              modal.find('.modal-body input').val(recipient)
-            })
-
-
+                modal.find('.modal-title').text("Book Ride: " + ridename);
+                if (!scheduleride[rideid]) {
+                    $("#ridetimesdata").html("")
+                    $("#loadingimg").show();
+                    client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
+                        var result = atob(JSON.parse(raw).result);
+                        $("#ridetimesdata").hide();
+                        $("#loadingimg").hide();   
+                        $("#ridetimesdata").html(err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid));
+                        scheduleride[rideid] = err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid);
+                        $("#ridetimesdata").show();
+                    });
+                }else{
+                    $("#loadingimg").hide();
+                }
+            });
+            $("#ridetimesupdate").click(function() {
+                var gettimesargs = {
+                    "rideID":rideid
+                };
+                var gettimesparams = [{
+                    "name" : "GetRideTimes",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [btoa(JSON.stringify(gettimesargs))],
+                    "jumps":{}
+                }];
+                $("#loadingimg").show();
+                $("#ridetimesdata").html("");
+                client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
+                var result = atob(JSON.parse(raw).result);
+                    $("#ridetimesdata").hide();
+                    $("#loadingimg").hide();   
+                    $("#ridetimesdata").html(err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid));
+                    scheduleride = err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid);
+                    $("#ridetimesdata").show();
+                });
+            });
+            $(document.body).on("click", "#book",function() {
+                var saveargs = {
+                    "rideID":rideid,
+                    "times":[$(event.relatedTarget).data('starttime'),$(event.relatedTarget).data('endtime')],
+                };
+                var gettimesparams = [{
+                    "name" : "SaveTimes",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [btoa(JSON.stringify(saveargs))],
+                    "jumps":{}
+                }];
+                $("#loadingimg").show();
+                client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
+                var result = atob(JSON.parse(raw).result);
+                    $("#loadingimg").hide();   
+                    alert("Booked ride");
+                });
+            });
           //methods and parameters for batch call
         });
         </script>
@@ -134,47 +216,47 @@
         <div class="container-fluid fullheight">
             <div class="row">
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/splashmountain.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MzI=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MzI=" data-toggle="modal" data-target="#scheduleride">
                         <p>Splash Mountain</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/itsasmallworld.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="OA==" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="OA==" data-toggle="modal" data-target="#scheduleride">
                         <p>It's A Small World</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/townsquare.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MQ==" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MQ==" data-toggle="modal" data-target="#scheduleride">
                         <p>Town Square Center Mickey</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/countrybear.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MTg=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MTg=" data-toggle="modal" data-target="#scheduleride">
                         <p>Country Bear Jamboree</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/bigthunder.jpg) no-repeat center bottom;background-size:cover;">
-                    <a href="#" class="tile" key="MzE=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MzE=" data-toggle="modal" data-target="#scheduleride">
                         <p>Big Thunder Mountain Railroad</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/hallofpresidents.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MTc=" data-toggle="modal" data-target="#scheduleride"
+                    <a href="#" class="tile" data-key="MTc=" data-toggle="modal" data-target="#scheduleride"
                         <p>The Hall of Presidents</p>
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/peterpansflight.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MjU=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MjU=" data-toggle="modal" data-target="#scheduleride">
                         <p>Peter Pan's Flight</p>
                     </a>        
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/minetrain.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MjI=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MjI=" data-toggle="modal" data-target="#scheduleride">
                         <p>Seven Dwarfs Mine Train</p>
                     </a>     
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/spacemountain.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" key="MzA=" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MzA=" data-toggle="modal" data-target="#scheduleride">
                         <p>Space Mountain</p>
                     </a>        
                 </div>
@@ -217,13 +299,13 @@
               <div class="modal-body">
                 <div class="container-fluid row">
                     <div class+"col-xs-2 col-xs-offset-5 m-x-2">
-                    <div id="scheduledata"></div>
+                    <div id="ridetimesdata"></div>
                     </div>
                 </div>
               </div>
               <div class="modal-footer">
                 <img id="loadingimg" src="/img/ajax-loader.gif" class="text-center"/>
-                <button type="button" class="btn btn-primary" id="saveride">Save</button>
+                <button id="ridetimesupdate" type="button" class="btn btn-primary"  data-key="MQ==">Update</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
               </div>
             </div>

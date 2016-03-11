@@ -34,6 +34,8 @@ func NewPeers(ttl time.Duration) *Peers {
 }
 
 func (self *Peers) Length() int {
+	self.RLock()
+	defer self.RUnlock()
 	return len(self.peers)
 }
 
@@ -122,12 +124,16 @@ func (self *Peers) BestMatch(reqs []reqs.Req) (*peer.Peer, error) {
 func (self *Peers) cleanworker(locaddr, addr string) {
 	peernode, err := peer.NewPeer(locaddr, addr, 1*time.Second)
 	if err == nil {
+		self.Lock()
 		self.peers[peernode.Addr] = peernode
 		self.data.Assign(peernode.Addr, structs.Map(peernode))
 		self.index.Insert([]byte(peernode.Addr), time.Now().UTC())
+		self.Unlock()
 	} else {
+		self.Lock()
 		delete(self.peers, addr)
 		self.data.Delete(addr)
+		self.Unlock()
 	}
 	return
 }
