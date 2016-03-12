@@ -2,8 +2,8 @@
 	"timeout":25,
 	"port": 2002, //takes next 2
 	"maxtasks": 50,
-	"dhtseed": "108.56.251.125:2009",
-	"peerseed": "108.56.251.125:2008", //comment test
+	"dhtseed": "",
+	"peerseed": "", //comment test
 	"maxtasks": 50,
 	"compute" : false,
 	"externalip": "108.31.152.169"
