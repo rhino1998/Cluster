@@ -32,12 +32,12 @@
         }
         function formatridetimes(schedule, rideid){
             var output = '<ul class="list-group">';
-            var template = $.validator.format('<li class="list-group-item container-fluid clearfix"><div class="pull-left">Ride {0} at {1} to {2}</div><div class="pull-right"><button id="book" type="button" class="btn btn-primary" data-key="{3}" data-starttime="{1}" data-endtime="{2}">Book</button></div></li>');
+            var template = $.validator.format('<li class="list-group-item container-fluid clearfix"><div class="pull-left">Ride {0} at {1} to {2}</div><div class="pull-right"><button id="book" type="button" class="btn btn-primary" data-key="{3}" data-starttime="{1}" data-endtime="{2}", data-id="{4}">Book</button></div></li>');
             for(var i = 0; i < schedule.length; i++){
                 var appt = schedule[i];
                 for (var ride in appt){
-                    if (appt.hasOwnProperty(ride)){
-                        output += template(ride, appt[ride][0], appt[ride][1], rideid)
+                    if (appt.hasOwnProperty(ride) && ride !== "id"){
+                        output += template(ride, appt[ride][0], appt[ride][1], rideid, appt["id"])
                     }
                 }
             }
@@ -46,35 +46,41 @@
         }
         $(document).ready(function(e) {
             $('#schedule').on('show.bs.modal', function (e) {
+                var scheduleargs = {
+                    "personID":"MDAw",
+                };
                 var params = [{
                     "name" : "GetScheduleData",
                     "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
-                    "args": [],
+                    "args": [btoa(JSON.stringify(scheduleargs))],
                     "jumps":{}
                 }];
                 $("#loadingimg").hide();
                 if ($("#scheduledata").text() === "") {
                     $("#loadingimg").show();
                     client.invoke("Node.AllocateTask", params, function (err, raw) {
-                    var result = atob(JSON.parse(raw).result);
-                    $("#scheduledata").hide();
-                    $("#loadingimg").hide();   
-                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
-                    $("#scheduledata").show();
-                });
+                        var result = atob(JSON.parse(raw).result);
+                        $("#scheduledata").hide();
+                        $("#loadingimg").hide();   
+                        $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                        $("#scheduledata").show();
+                    });
                 }else{
                     $("#loadingimg").hide();
                 }
             });
             $("#scheduleupdate").click(function() {
+                var scheduleargs = {
+                    "personID":"MDAw",
+                };
                 var params = [{
                     "name" : "GetScheduleData",
                     "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
-                    "args": [],
+                    "args": [btoa(JSON.stringify(scheduleargs))],
                     "jumps":{}
                 }];
                 $("#loadingimg").show();
@@ -88,6 +94,29 @@
                 })
             });
 
+            $("#clearschedule").click(function() {
+                var scheduleargs = {
+                    "personID":"MDAw",
+                };
+                var params = [{
+                    "name" : "GetScheduleData",
+                    "filename": "task2.exe",
+                    "loc": ".",
+                    "value": 3400,
+                    "args": [btoa(JSON.stringify(scheduleargs))],
+                    "jumps":{}
+                }];
+                $("#loadingimg").show();
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || "");
+                    $("#scheduledata").show();
+
+                })
+            });
+
             var scheduleride = {};
             $('#scheduleride').on('show.bs.modal', function (event) {
                 var modal = $(this)
@@ -95,6 +124,7 @@
                 rideid = $(event.relatedTarget).data('key')
                 $("#ridetimesupdate").data('key',rideid)
                 var gettimesargs = {
+                    "personID":"MDAw",
                     "rideID":rideid
                 };
                 var gettimesparams = [{
@@ -112,21 +142,22 @@
                 modal.find('.modal-title').text("Book Ride: " + ridename);
                 if (!scheduleride[rideid]) {
                     $("#ridetimesdata").html("")
-                    $("#loadingimg").show();
+                    $("#loadingimg2").show();
                     client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
                         var result = atob(JSON.parse(raw).result);
                         $("#ridetimesdata").hide();
-                        $("#loadingimg").hide();   
+                        $("#loadingimg2").hide();   
                         $("#ridetimesdata").html(err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid));
                         scheduleride[rideid] = err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid);
                         $("#ridetimesdata").show();
                     });
                 }else{
-                    $("#loadingimg").hide();
+                    $("#loadingimg2").hide();
                 }
             });
             $("#ridetimesupdate").click(function() {
                 var gettimesargs = {
+                    "personID":"MDAw",
                     "rideID":rideid
                 };
                 var gettimesparams = [{
@@ -137,12 +168,11 @@
                     "args": [btoa(JSON.stringify(gettimesargs))],
                     "jumps":{}
                 }];
-                $("#loadingimg").show();
-                $("#ridetimesdata").html("");
+                $("#loadingimg2").show();
                 client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
                 var result = atob(JSON.parse(raw).result);
                     $("#ridetimesdata").hide();
-                    $("#loadingimg").hide();   
+                    $("#loadingimg2").hide();   
                     $("#ridetimesdata").html(err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid));
                     scheduleride = err || formatridetimes(JSON.parse(atob(JSON.parse(raw).result)),rideid);
                     $("#ridetimesdata").show();
@@ -150,6 +180,8 @@
             });
             $(document.body).on("click", "#book",function() {
                 var saveargs = {
+                    "personID":"MDAw",
+                    "id": $(event.relatedTarget).data('id'),
                     "rideID":rideid,
                     "times":[$(event.relatedTarget).data('starttime'),$(event.relatedTarget).data('endtime')],
                 };
@@ -161,10 +193,10 @@
                     "args": [btoa(JSON.stringify(saveargs))],
                     "jumps":{}
                 }];
-                $("#loadingimg").show();
+                $("#loadingimg2").show();
                 client.invoke("Node.AllocateTask", gettimesparams, function (err, raw) {
-                var result = atob(JSON.parse(raw).result);
-                    $("#loadingimg").hide();   
+                    var result = atob(JSON.parse(raw).result);
+                    $("#loadingimg2").hide();   
                     alert("Booked ride");
                 });
             });
@@ -304,7 +336,7 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <img id="loadingimg" src="/img/ajax-loader.gif" class="text-center"/>
+                <img id="loadingimg2" src="/img/ajax-loader.gif" class="text-center"/>
                 <button id="ridetimesupdate" type="button" class="btn btn-primary"  data-key="MQ==">Update</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
               </div>
