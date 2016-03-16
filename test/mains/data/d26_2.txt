@@ -1,1 +1,0 @@
-{"Paths":[{"Length":218,"L1":26,"L2":27,"K":"p2627.txt"},{"Length":408,"L1":27,"L2":11,"K":"p2711.txt"},{"Length":159,"L1":6,"L2":11,"K":"p611.txt"},{"Length":73,"L1":3,"L2":6,"K":"p36.txt"},{"Length":65,"L1":2,"L2":3,"K":"p23.txt"}],"Dir":[false,true,false,false,false]}

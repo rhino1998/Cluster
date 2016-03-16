@@ -1,0 +1,10 @@
+Town Square Center Mickey,2,69,1,0,3,4,4,1,100,90,3
+It's A Small World,25,25,2,0.5,14,16,4,30,90,40,2
+The Hall of Presidents,27,10,3,1,22,750,750,1,90,40,1
+Country Bear Jamboree,27,10,3,1,10,100,100,1,100,25,2
+Seven Dwarfs Mine Train,24,110,4,2,5.33,20,2,7,105,55,4
+Peter Pan's Flight,25,75,4,0,3,13,4,1,110,80,2
+Space Mountain,15,81,5,0.35,10,12,3,15,100,25,4
+Big Thunder Mountain Railroad,29,63,5,.75,7,30,2,5,105,55,3
+Splash Mountain,29,78,5,.27,10.68,8,2,40,105,55,3
+Splash Mountain,29,78,5,.27,10.68,8,2,40,105,55,3

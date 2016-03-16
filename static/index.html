@@ -51,7 +51,7 @@
                 };
                 var params = [{
                     "name" : "GetScheduleData",
-                    "filename": "mains/getRides.exe",
+                    "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(scheduleargs))],
@@ -77,7 +77,7 @@
                 };
                 var params = [{
                     "name" : "GetScheduleData",
-                    "filename": "mains/getRides.exe",
+                    "filename": "task.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(scheduleargs))],
@@ -90,7 +90,62 @@
                     $("#loadingimg").hide();
                     $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
                     $("#scheduledata").show();
-
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
+                })
+                client.invoke("Node.AllocateTask", params, function (err, raw) {
+                    var result = atob(JSON.parse(raw).result);
+                    $("#scheduledata").hide();
+                    $("#loadingimg").hide();
+                    $("#scheduledata").html(err || formatschedule(JSON.parse(atob(JSON.parse(raw).result))));
+                    $("#scheduledata").show();
                 })
             });
 
@@ -100,7 +155,7 @@
                 };
                 var params = [{
                     "name" : "GetScheduleData",
-                    "filename": "mains/delete.exe",
+                    "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(scheduleargs))],
@@ -129,7 +184,7 @@
                 };
                 var gettimesparams = [{
                     "name" : "GetRideTimes",
-                    "filename": "mains/getTimes.exe",
+                    "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(gettimesargs))],
@@ -162,7 +217,7 @@
                 };
                 var gettimesparams = [{
                     "name" : "GetRideTimes",
-                    "filename": "mains/getTimes.exe",
+                    "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(gettimesargs))],
@@ -187,7 +242,7 @@
                 };
                 var gettimesparams = [{
                     "name" : "SaveTimes",
-                    "filename": "mains/save.exe",
+                    "filename": "task2.exe",
                     "loc": ".",
                     "value": 3400,
                     "args": [btoa(JSON.stringify(saveargs))],
@@ -258,7 +313,7 @@
                     </a>
                 </div>
                 <div class="image-block col-xs-4 noselect" style="background: url(/img/townsquare.jpg) no-repeat center center;background-size:cover;">
-                    <a href="#" class="tile" data-key="VG93biBTcXVhcmUgQ2VudGVyIE1pY2tleQ==" data-toggle="modal" data-target="#scheduleride">
+                    <a href="#" class="tile" data-key="MQ==" data-toggle="modal" data-target="#scheduleride">
                         <p>Town Square Center Mickey</p>
                     </a>
                 </div>

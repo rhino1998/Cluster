@@ -7,7 +7,48 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
 )
+
+func PadKey(key []byte, length int) []byte {
+	if len(key) < length {
+		temp := make([]byte, length)
+		copy(temp, key)
+		return temp
+	}
+	return key
+}
+
+func Read_int64(data []byte, big bool) (ret uint64) {
+	if big {
+		for i, b := range data {
+			ret |= uint64(b) << uint((i)*8)
+		}
+	} else {
+		l := len(data)
+		for i, b := range data {
+			ret |= uint64(b) << uint((l-i-1)*8)
+		}
+	}
+
+	return ret
+}
+
+func IpValue(addr string) uint64 {
+	ipstring, portstring, err := net.SplitHostPort(addr)
+	if err != nil {
+		return uint64(0)
+	}
+	port, err := strconv.Atoi(portstring)
+	if err != nil {
+		return uint64(0)
+	}
+	ip := net.ParseIP(ipstring)
+	if ip == nil {
+		return uint64(0)
+	}
+	return (Read_int64([]byte(ip)[12:], true)<<16 | uint64(port))
+}
 
 func GetLocalIP() (ip net.IP, err error) {
 	ifaces, err := net.Interfaces()

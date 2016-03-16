@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/rhino1998/god/common"
 	"io/ioutil"
@@ -25,24 +26,29 @@ func MustConn(addr string) *Conn {
 }
 
 func (self *Conn) Get(key []byte) ([]byte, bool) {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v"}`, string(key)))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v"}`, base64.StdEncoding.EncodeToString(key)))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.Get", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Accept", "application/json")
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err == nil {
-		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
-		var dat getreturn
-		json.Unmarshal(body, &dat)
-		val, _ := base64.StdEncoding.DecodeString(dat.Value)
-		return val, dat.Exists
+	var err error
+	err = errors.New("fjjf")
+	for err != nil {
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+			var dat getreturn
+			json.Unmarshal(body, &dat)
+			val, _ := base64.StdEncoding.DecodeString(dat.Value)
+			return val, dat.Exists
+		}
 	}
+
 	return nil, false
 }
 
 func (self *Conn) Put(key, val []byte) {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Sync": false, "Value":"%v"}`, string(key), string(val)))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Sync": false, "Value":"%v"}`, base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(val)))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.Put", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Length", string(len(string(jsonStr))))
 	req.Header.Set("Accept", "application/json")
@@ -52,7 +58,7 @@ func (self *Conn) Put(key, val []byte) {
 }
 
 func (self *Conn) SubPut(key, subkey, val []byte) {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "SubKey":"%v", "Sync": false, "Value":"%v"}`, string(key), string(subkey), string(val)))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "SubKey":"%v", "Sync": false, "Value":"%v"}`, base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(subkey), base64.StdEncoding.EncodeToString(val)))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.SubPut", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Length", string(len(string(jsonStr))))
 	req.Header.Set("Accept", "application/json")
@@ -62,7 +68,7 @@ func (self *Conn) SubPut(key, subkey, val []byte) {
 }
 
 func (self *Conn) Del(key []byte) {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Sync": false}`, string(key)))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Sync": false}`, base64.StdEncoding.EncodeToString(key)))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.Del", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Length", string(len(string(jsonStr))))
 	req.Header.Set("Accept", "application/json")
@@ -72,7 +78,7 @@ func (self *Conn) Del(key []byte) {
 }
 
 func (self *Conn) SubDel(key, subkey []byte) {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "SubKey":"%v", "Sync": false}`, string(key), string(subkey)))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "SubKey":"%v", "Sync": false}`, base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(subkey)))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.SubDel", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Length", string(len(string(jsonStr))))
 	req.Header.Set("Accept", "application/json")
@@ -82,7 +88,7 @@ func (self *Conn) SubDel(key, subkey []byte) {
 }
 
 func (self *Conn) Slice(key, min, max []byte, mininc, maxinc bool) []common.Item {
-	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Min":"%v", "Max":"%v", "Sync": false, "MinInc": %v, "MaxInc": %v}`, string(key), string(min), string(max), mininc, maxinc))
+	var jsonStr = []byte(fmt.Sprintf(`{"Key":"%v", "Min":"%v", "Max":"%v", "Sync": false, "MinInc": %v, "MaxInc": %v}`, base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(min), base64.StdEncoding.EncodeToString(max), mininc, maxinc))
 	fmt.Println(string(jsonStr))
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/rpc/DHash.Slice", self.addr), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Length", string(len(string(jsonStr))))

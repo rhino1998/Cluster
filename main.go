@@ -2,18 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc"
-	"github.com/gorilla/rpc/json"
 	"github.com/rhino1998/cluster/bench"
 	"github.com/rhino1998/cluster/info"
 	"github.com/rhino1998/cluster/node"
+	"net"
+	"net/rpc"
 	//"github.com/rhino1998/cluster/peer"
 	"flag"
 	"github.com/rhino1998/cluster/util"
-	"github.com/rhino1998/god/dhash"
 	"log"
-	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
@@ -38,41 +35,24 @@ func init_node() {
 	if err != nil {
 		log.Println(err)
 	}
-	kvstoreaddr := fmt.Sprintf("%v:%v", extip, Config.Port+1)
-	kvstore := dhash.NewNodeDir(fmt.Sprintf("%v:%v", "0.0.0.0", Config.Port+1), fmt.Sprintf("%v:%v", extip, Config.Port+1), "")
-	kvstore.Start()
-	kvstore.StartJson()
-	if Config.DHTSeed != "" {
-		kvstore.MustJoin(Config.DHTSeed)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Port), fmt.Sprintf("%v:%v", locip.String(), Config.Port), *description, 20*time.Second, Config.MaxTasks)
+}
+
+func startrpc() {
+	server := rpc.NewServer()
+	server.Register(This)
+	l, e := net.Listen("tcp", fmt.Sprintf(":%v", Config.Port))
+	if e != nil {
+		log.Fatal("listen error:", e)
 	}
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Port), fmt.Sprintf("%v:%v", locip.String(), Config.Port), *description, kvstoreaddr, 20*time.Second, Config.MaxTasks)
-}
 
-type MyServer struct {
-	r *mux.Router
-}
-
-func addDefaultHeadersFunc(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			log.Fatal(err)
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		fn(w, r)
-	}
-}
 
-func addDefaultHeadersHand(han http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		han.ServeHTTP(w, r)
+		go server.ServeConn(conn)
 	}
 }
 
@@ -85,34 +65,20 @@ func main() {
 		initForward()
 	}
 	init_node()
-	s := rpc.NewServer()
-	s.RegisterCodec(json.NewCodec(), "application/json")
-	s.RegisterCodec(json.NewCodec(), "application/json;charset=UTF-8")
-	s.RegisterService(This, "")
-	r := mux.NewRouter()
-	r.HandleFunc("/rpc", addDefaultHeadersHand(s))
-	r.HandleFunc("/api/peers", api_peers)
-	r.HandleFunc("/api/task", api_task)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
+	go startrpc()
 	log.Println("whee")
-	go http.ListenAndServe(fmt.Sprintf(":%v", Config.Port), r)
-	log.Println(s.HasMethod("Node.AllocateTask"))
 	if Config.PeerSeed != "" {
-		This.GreetPeer(Config.PeerSeed)
+		This.Peers.AddPeer(Config.PeerSeed)
 	}
 	for {
 		time.Sleep(2500 * time.Millisecond)
 		go func() {
-			peernode, err := This.Peers.GetAPeer()
-			if err != nil {
-				log.Println(err)
+			if This.Peers.Length() == 0 {
 				if Config.PeerSeed != "" {
-					This.GreetPeer(Config.PeerSeed)
-				} else {
-					log.Println("waiting for peers")
+					This.Peers.AddPeer(Config.PeerSeed)
 				}
 			} else {
-				This.GreetPeer(peernode.Addr)
+				This.Peers.Update()
 			}
 		}()
 	}

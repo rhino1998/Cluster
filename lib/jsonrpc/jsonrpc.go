@@ -11,30 +11,32 @@ import (
 	"time"
 )
 
+var client *http.Client = &http.Client{
+	Transport: &http.Transport{
+		DisableKeepAlives:   true,
+		MaxIdleConnsPerHost: 0,
+		Proxy:               http.ProxyFromEnvironment,
+		Dial: (&net.Dialer{
+			Timeout:   500 * time.Millisecond,
+			KeepAlive: 0,
+			LocalAddr: nil,
+		}).Dial,
+		TLSHandshakeTimeout:   3 * time.Second,
+		ExpectContinueTimeout: 500 * time.Millisecond,
+	},
+}
+
 type Client struct {
 	client *http.Client
-	Addr   string
+	addr   string
 }
 
 func NewClient(laddr, raddr string) *Client {
 	laddress, _ := net.ResolveTCPAddr("tcp", laddr)
 	laddress.IP = net.ParseIP("localhost")
 	return &Client{
-		Addr: fmt.Sprintf("http://%v/rpc", raddr),
-		client: &http.Client{
-			Transport: &http.Transport{
-				DisableKeepAlives:   true,
-				MaxIdleConnsPerHost: 0,
-				Proxy:               http.ProxyFromEnvironment,
-				Dial: (&net.Dialer{
-					Timeout:   500 * time.Millisecond,
-					KeepAlive: 0,
-					LocalAddr: nil,
-				}).Dial,
-				TLSHandshakeTimeout:   3 * time.Second,
-				ExpectContinueTimeout: 500 * time.Millisecond,
-			},
-		},
+		addr:   fmt.Sprintf("http://%v/rpc", raddr),
+		client: client,
 	}
 }
 
@@ -44,7 +46,7 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", self.Addr, bytes.NewBuffer(message))
+	req, err := http.NewRequest("POST", self.addr, bytes.NewBuffer(message))
 	if err != nil {
 		return err
 	}
@@ -61,8 +63,8 @@ func (self *Client) Call(service string, args interface{}, reply interface{}) er
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	// Use the content
 	bodyString := string(bodyBytes)
-	log.Println(bodyString)
-	defer resp.Body.Close()*/
+	log.Println(bodyString)*/
+	defer resp.Body.Close()
 	err = json.DecodeClientResponse(resp.Body, reply)
 	if err != nil {
 		log.Println("Couldn't decode response. %s", err)
