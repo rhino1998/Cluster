@@ -6,5 +6,6 @@ import (
 
 type Info struct {
 	Compute bool `json:"compute"`
+	IntAddr string
 	bench.Specs
 }

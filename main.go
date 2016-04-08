@@ -18,9 +18,11 @@ import (
 
 var (
 	This *node.Node
+	port int
 )
 
 func init_node() {
+	log.Println(port)
 	specs, err := bench.LoadSpecs("./specs.json")
 	if err != nil {
 		log.Println(err)
@@ -28,6 +30,7 @@ func init_node() {
 	}
 	description := &info.Info{Compute: Config.Compute, Specs: *specs}
 	extip, err := util.GetExternalIP()
+	log.Println(extip, port)
 	if err != nil {
 		log.Println(err)
 	}
@@ -35,13 +38,13 @@ func init_node() {
 	if err != nil {
 		log.Println(err)
 	}
-	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), Config.Port), fmt.Sprintf("%v:%v", locip.String(), Config.Port), *description, 20*time.Second, Config.MaxTasks)
+	This = node.NewNode(fmt.Sprintf("%v:%v", extip.String(), port), fmt.Sprintf("%v:%v", locip.String(), port), *description, 20*time.Second, Config.MaxTasks)
 }
 
 func startrpc() {
 	server := rpc.NewServer()
 	server.Register(This)
-	l, e := net.Listen("tcp", fmt.Sprintf(":%v", Config.Port))
+	l, e := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
@@ -57,6 +60,7 @@ func startrpc() {
 }
 
 func main() {
+	flag.IntVar(&port, "port", Config.Port, "port")
 	forwardport := flag.Bool("f", false, "forward or not")
 	flag.Parse()
 	runtime.GOMAXPROCS(1)
@@ -72,15 +76,13 @@ func main() {
 	}
 	for {
 		time.Sleep(2500 * time.Millisecond)
-		go func() {
-			if This.Peers.Length() == 0 {
-				if Config.PeerSeed != "" {
-					This.Peers.AddPeer(Config.PeerSeed)
-				}
-			} else {
-				This.Peers.Update()
-			}
-		}()
+		//if This.Peers.Length() == 0 {
+		/*if Config.PeerSeed != "" {
+			This.Peers.AddPeer(Config.PeerSeed)
+		}
+		//}*/
+		//log.Println(This.Peers.Length())
+		go This.Peers.Update()
 	}
 
 	select {}

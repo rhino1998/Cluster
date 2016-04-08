@@ -3,123 +3,140 @@ package peers
 import (
 	"log"
 	//"net"
+	//"fmt"
+	"github.com/rhino1998/cluster/common"
 	"github.com/rhino1998/cluster/tasks"
 	"github.com/rhino1998/cluster/util"
-	"github.com/spaolacci/murmur3"
-	"sync"
+	// /"runtime"
+	//"sync"
+	//"time"
 )
 
 //A time indexed queryable map of peers
 type Peers struct {
-	sync.RWMutex
-	history map[string]uint64
-	peers   chan *Peer
-	route   chan *Peer
-	addr    string
+	table *Table
+	peers chan *Peer
+	this  *Peer
 }
 
 //Creates an empty list of peers
-func NewPeers(addr string) *Peers {
-	return &Peers{peers: make(chan *Peer, 20), route: make(chan *Peer, 2000), addr: addr, history: make(map[string]uint64, 20)}
+func NewPeers(this *Peer) *Peers {
+	peers := &Peers{peers: make(chan *Peer), this: this, table: NewTable(this.Key())}
+	return peers
 }
 
 func (self *Peers) Length() int {
-	return len(self.peers)
+	return self.table.Len()
 }
 
 func (self *Peers) Update() {
-	peernode := <-self.route
-	self.route <- peernode
+	peers, err := self.GetPeers(self.GetAPeer(), 12)
+	if err == nil {
+		for _, peeraddr := range peers {
+			self.AddPeer(peeraddr)
+		}
+	}
+
 }
 
 func (self *Peers) GetXPeers(x int) []*Peer {
 	temp := make([]*Peer, x, x)
 	for i := 0; i < x; i++ {
-		select {
-		case peernode := <-self.route:
-			temp = append(temp, peernode)
-			self.route <- peernode
-		default:
-		}
+		temp[i] = self.GetAPeer()
 	}
 	return temp
 }
 
-func (self *Peers) ClosestPeer(key []byte) *Peer {
-	hash := murmur3.Sum64(key)
-	closest := ^uint64(0)
-	peer := <-self.route
-	self.route <- peer
-	for i := 0; i < len(self.route); i++ {
-		peernode := <-self.route
-		self.route <- peernode
-		val := hash ^ self.history[peernode.Addr]
-		if val < closest {
-			closest = val
-			peer = peernode
-		}
-	}
+func (self *Peers) ClosestPeer(key uint64) *Peer {
+	peer := self.table.GetClosest(key)
 	return peer
 }
 
 func (self *Peers) GetAPeer() *Peer {
 	peernode := <-self.peers
-	log.Println(peernode.IsDead())
-	for peernode.IsDead() {
-		self.Lock()
-		delete(self.history, peernode.Addr)
-		self.Unlock()
+	//log.Println(peernode.Addr, "got")
+	for peernode.isDead() {
+		self.table.Delete(peernode.Key())
 		peernode = <-self.peers
 	}
-	self.peers <- peernode
+	//self.peers <- peernode
 	return peernode
-}
-
-func (self *Peers) Reconnect(remaddr string) {
-	NewPeer(self.addr, remaddr)
-}
-
-func (self *Peers) AllocateTask(task *tasks.Task) (result []byte, err error) {
-	peernode := self.GetAPeer()
-	for task.Visited(peernode.Addr) {
-		peernode = self.GetAPeer()
-	}
-	log.Printf("Allocated %v from %v to %v", string(task.Id), self.addr, peernode.Addr)
-	defer log.Printf("Recieved %v from %v", string(task.Id), peernode.Addr)
-	result, err = peernode.AllocateTask(task)
-	if err != nil {
-		peernode.Kill()
-		log.Println(err)
-	}
-	return
-
 }
 
 //Adds a peer to the set of peers
 func (self *Peers) AddPeer(remaddr string) {
-	self.RLock()
-	if _, exists := self.history[remaddr]; exists {
-		self.RUnlock()
+	if remaddr == self.this.Addr || !self.table.Fits(util.IpValue(remaddr)) {
+
 		return
 	}
-	self.RUnlock()
-	self.Lock()
-	self.history[remaddr] = util.IpValue(remaddr)
-	self.Unlock()
-	newpeer, err := NewPeer(self.addr, remaddr)
-	if err == nil {
-		self.peers <- newpeer
-		self.route <- newpeer
-		peeraddrs, err := newpeer.GetPeers(12)
+	newpeer, err := NewPeer(self.this.IntAddr, self.this.Addr, remaddr)
+	if err == nil && newpeer != nil {
+		if self.table.Insert(newpeer) {
+			go func() {
+				for !newpeer.isDead() {
+					self.peers <- newpeer
+				}
+				self.table.Delete(newpeer.Key())
+			}()
+		}
+
+		peeraddrs, err := self.GetPeers(newpeer, 48)
 		if err == nil {
 			for _, peeraddr := range peeraddrs {
 				self.AddPeer(peeraddr)
 			}
 		}
-	} else {
-		self.Lock()
-		delete(self.history, remaddr)
-		self.Unlock()
 	}
 	return
+}
+
+//PeerWrappers For Failure
+
+func (self *Peers) Ping(peer *Peer) (err error) {
+	err = peer.ping()
+	if err != nil {
+		self.failure(peer, err)
+	}
+	return err
+}
+
+func (self *Peers) GetPeers(peer *Peer, x int) (peers []string, err error) {
+	peers, err = peer.getpeers(x)
+	if err != nil {
+		self.failure(peer, err)
+	}
+	return peers, err
+}
+
+func (self *Peers) Get(peer *Peer, key string) (data []byte, err error) {
+	data, err = peer.get(key)
+	if err != nil {
+		self.failure(peer, err)
+	}
+	return data, err
+}
+
+func (self *Peers) Put(peer *Peer, item *common.Item) (success bool, err error) {
+	success, err = peer.put(item)
+	if err != nil {
+		self.failure(peer, err)
+	}
+	return success, err
+}
+
+func (self *Peers) AllocateTask(peer *Peer, task *tasks.Task) (result []byte, err error) {
+	log.Printf("Allocated %v from %v to %v", string(task.Id), self.this.Addr, peer.Addr)
+	defer log.Printf("Recieved %v from %v", string(task.Id), peer.Addr)
+	result, err = peer.AllocateTask(task)
+	if err != nil {
+		self.failure(peer, err)
+	}
+	return result, err
+
+}
+
+func (self *Peers) failure(peer *Peer, err error) {
+	log.Println("FAIL FUCK", err)
+	peer.kill()
+	self.table.Delete(peer.Key())
 }

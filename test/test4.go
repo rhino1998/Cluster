@@ -1,68 +1,58 @@
 package main
 
 import (
-	//"crypto/sha1"
-	"fmt"
-	"math/rand"
+	//"fmt"
+	"github.com/rhino1998/cluster/common"
+	"log"
 	"net"
+	"net/rpc"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
-
-	"github.com/rhino1998/cluster/util"
 )
 
-func read_int64(data []byte, big bool) (ret uint64) {
-	if big {
-		for i, b := range data {
-			ret |= uint64(b) << uint((i)*8)
-		}
-	} else {
-		l := len(data)
-		for i, b := range data {
-			ret |= uint64(b) << uint((l-i-1)*8)
-		}
-	}
-
-	return ret
-}
-
-func comp(key []byte, addr string) (ret uint64) {
-	ipstring, portstring, err := net.SplitHostPort(addr)
-	if err != nil {
-		return ^uint64(0)
-	}
-	port, err := strconv.Atoi(portstring)
-	if err != nil {
-		return ^uint64(0)
-	}
-	ip := net.ParseIP(ipstring)
-	if ip == nil {
-		return ^uint64(0)
-	}
-	return read_int64(key[:6], false) ^ (read_int64([]byte(ip)[12:], true)<<16 | uint64(port))
-}
-
 func main() {
-	rand.Seed(time.Now().UnixNano())
-	addrs := make(chan string, 20)
-	for i := 0; i < 20; i++ {
-		addrs <- fmt.Sprintf("%v.%v.%v.%v:%v", rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(65535))
+	conn, err := net.Dial("tcp", "localhost:3002")
+	client := rpc.NewClient(conn)
+	var wg sync.WaitGroup
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println(len(addrs))
-	dat := util.PadKey([]byte{254}, 6)
-	best := ^uint64(0)
-	bestaddr := <-addrs
-	addrs <- bestaddr
-	for i := 0; i < len(addrs); i++ {
-		addr := <-addrs
-		addrs <- addr
-
-		val := comp(dat[:6], addr)
-		if val < best {
-			bestaddr = addr
-			best = val
-		}
+	var puttimer int64 = 0
+	var reply []byte
+	now := time.Now()
+	for i := 0; i < 100000; i++ {
+		wg.Add(1)
+		go func(i int) {
+			temp := time.Now()
+			item := &common.Item{Key: strconv.Itoa(i), Data: []byte("randrandrd")}
+			err = client.Call("Node.Put", item, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+			atomic.AddInt64(&puttimer, int64(time.Since(temp)))
+			wg.Done()
+		}(i)
 	}
-	fmt.Println(best, bestaddr)
-
+	wg.Wait()
+	var gettimer int64 = 0
+	var wg2 sync.WaitGroup
+	for i := 0; i < 100000; i++ {
+		wg2.Add(1)
+		go func(i int) {
+			temp := time.Now()
+			stri := strconv.Itoa(i)
+			err = client.Call("Node.Get", &stri, &reply)
+			if err != nil || string(reply) != "randrandrd" {
+				log.Fatal(err, string(reply))
+			}
+			log.Println(string(reply))
+			atomic.AddInt64(&gettimer, int64(time.Since(temp)))
+			wg2.Done()
+		}(i)
+	}
+	log.Println("alloc", float64(time.Since(now).Nanoseconds()/1000000))
+	wg2.Wait()
+	log.Println(puttimer/1000000/20, gettimer/1000000/20)
 }

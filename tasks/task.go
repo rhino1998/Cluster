@@ -2,22 +2,25 @@ package tasks
 
 import (
 	//"github.com/rhino1998/cluster/reqs"
-	"github.com/rhino1998/cluster/util"
+	"fmt"
+	"github.com/spaolacci/murmur3"
+	"time"
 )
 
 type Task struct {
-	Id    []byte         `json:"id"`
+	Id    uint64         `json:"id"`
 	Jumps map[string]int `json:"jumps"`
 	Name  string         `json:"name"`
 	Args  []string       `json:"args"`
 	//Reqs     //[]reqs.Req
+	Checksum []byte `json:"Checksum"`
 	FileName string `json:"filename"`
-	Loc      string `json:"loc"`
+	Url      string `json:"url"`
 	Value    int    `json:"value"`
 }
 
-func NewTask(name, loc, filename string, args []string, value int) Task {
-	return Task{Id: []byte(util.NewUUID()), Jumps: make(map[string]int), FileName: filename, Name: name, Loc: loc, Value: value, Args: args}
+func NewTask(name, url, filename string, args []string, value int) Task {
+	return Task{Id: murmur3.Sum64([]byte(fmt.Sprintf("%v", time.Now().UnixNano()))) >> 16, Jumps: make(map[string]int), FileName: filename, Name: name, Url: url, Value: value, Args: args}
 }
 
 func (self Task) Add(addr string) {

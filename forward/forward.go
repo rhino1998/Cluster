@@ -7,9 +7,9 @@ import (
 )
 
 type Mapping struct {
-	Protocols   [2]upnp.Protocol `json:"protocols"`
-	Ports       [3]int           `json:"port"`
-	Description string           `json:"description"`
+	Protocols   []upnp.Protocol `json:"protocols"`
+	Ports       []int           `json:"port"`
+	Description string          `json:"description"`
 }
 
 func Forward(nat upnp.IGD, mapping Mapping) (err error) {

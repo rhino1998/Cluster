@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,7 +19,6 @@ func PadKey(key []byte, length int) []byte {
 	}
 	return key
 }
-
 func Read_int64(data []byte, big bool) (ret uint64) {
 	if big {
 		for i, b := range data {
@@ -66,14 +66,13 @@ func GetLocalIP() (ip net.IP, err error) {
 			switch v := addr.(type) {
 			case *net.IPNet:
 				ip = v.IP
-				if !ip.IsLoopback() && ip.String() != "0.0.0.0" {
-					return ip, nil
-				}
+
 			case *net.IPAddr:
 				ip = v.IP
-				if !ip.IsLoopback() && ip.String() != "0.0.0.0" {
-					return ip, nil
-				}
+			}
+			log.Println(ip.String())
+			if !ip.IsLoopback() && ip.String() != "0.0.0.0" && ip.To4() != nil {
+				return ip, nil
 			}
 		}
 	}
