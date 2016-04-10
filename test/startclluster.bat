@@ -3,10 +3,11 @@ setlocal enableDelayedExpansion
 chdir C:\GoProj\src\github.com\rhino1998\cluster\test\0
 start C:\GoProj\src\github.com\rhino1998\cluster\test\cluster.exe -port 3000
 chdir C:\GoProj\src\github.com\rhino1998\cluster\test
-for /L %%A in (1,1,50) do (
+for /L %%A in (1,1,9) do (
 	mkdir %%A
 	copy specs.json %%A\specs.json
         copy conf.json %%A\conf.json
+	copy task2.exe %%A\task2.exe
 	set /A port=%%A+3000
 	echo port=!port!
 	echo %%A 

@@ -1,9 +1,0 @@
-{
-	"timeout":25,
-	"port": 3000, //takes next 2
-	"dhtseed": "",
-	"peerseed": "108.56.251.125:3000", //comment test
-	"maxtasks": 2000000,
-	"compute" : true,
-	"externalip": "108.31.152.169"
-}
