@@ -23,7 +23,7 @@ func main() {
 		wg.Add(1)
 		//time.Sleep(20 * time.Millisecond)
 		go func() {
-			task := tasks.NewTask("FLOOP", "http://localhost:8080/task2.exe", "task2.exe", []string{"hey"}, 3400)
+			task := tasks.NewTask("FLOOP", "http://localhost:8080/task2.exe", "task2", []string{"hey"}, 3400)
 			err = client.Call("Node.AllocateTask", &task, &reply)
 			if err != nil || string(reply) != "yo\n" {
 				log.Fatal(err, string(reply))
