@@ -17,7 +17,7 @@ import (
 type Peer struct {
 	client *rpc.Client
 	Addr   string `json:"addr"`
-	conn *net.Conn
+	conn net.Conn
 	info.Info
 	id   uint64
 	dead uint32
@@ -56,7 +56,7 @@ func NewPeer(intaddr, locaddr, remaddr string) (*Peer, error) {
 			conn = conn2
 		}
 	}
-	peer := &Peer{Addr: remaddr, Info: description, dead: 0, id: util.IpValue(remaddr), client: client. conn: conn}
+	peer := &Peer{Addr: remaddr, Info: description, dead: 0, id: util.IpValue(remaddr), client: client, conn: conn}
 	go func() {
 		for !peer.isDead() {
 			if !peer.livecheck() {
