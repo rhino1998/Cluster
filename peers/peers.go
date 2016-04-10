@@ -30,7 +30,7 @@ func (self *Peers) Length() int {
 }
 
 func (self *Peers) Update() {
-	peers, err := self.GetPeers(self.GetAPeer(), 12)
+	peers, err := self.GetPeers(self.GetAPeer(), 4)
 	if err == nil {
 		for _, peeraddr := range peers {
 			self.AddPeer(peeraddr)
@@ -80,7 +80,7 @@ func (self *Peers) AddPeer(remaddr string) {
 			}()
 		}
 
-		peeraddrs, err := self.GetPeers(newpeer, 48)
+		peeraddrs, err := self.GetPeers(newpeer, 4)
 		if err == nil {
 			for _, peeraddr := range peeraddrs {
 				self.AddPeer(peeraddr)

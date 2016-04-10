@@ -11,6 +11,7 @@ import (
 	"flag"
 	"github.com/rhino1998/cluster/util"
 	"log"
+	//"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
@@ -60,6 +61,9 @@ func startrpc() {
 }
 
 func main() {
+	//go func() {
+	//	log.Println(http.ListenAndServe("localhost:6060", nil))
+	//}()
 	flag.IntVar(&port, "port", Config.Port, "port")
 	forwardport := flag.Bool("f", false, "forward or not")
 	flag.Parse()

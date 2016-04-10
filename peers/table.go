@@ -86,7 +86,9 @@ func (self *Table) Delete(key uint64) {
 		self.Lock()
 		peernode := self.peers[i]
 		if peernode != nil && peernode.Key() == key {
-			peernode.kill()
+			if !peernode.isDead() {
+				peernode.kill()
+			}
 			self.peers[i] = nil
 		}
 		self.Unlock()
@@ -141,7 +143,7 @@ func (self *Table) insert(peer *Peer, offset int) bool {
 		}
 	}
 	log.Println("kill cause no fit", peer.Addr)
-	peer.kill()
+	peer.evict()
 	return false
 }
 

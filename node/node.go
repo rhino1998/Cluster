@@ -13,7 +13,6 @@ import (
 	//"errors"
 	"fmt"
 	"github.com/rhino1998/cluster/lib/multimutex"
-	"github.com/rhino1998/cluster/lib/valuemutex"
 	"io"
 	"net/http"
 	"os"
@@ -35,7 +34,7 @@ type Node struct {
 	queuelock    *multimutex.MultiMutex
 	allocatelock *multimutex.MultiMutex
 	processlock  *multimutex.MultiMutex
-	routelock    *valuemutex.ValueMutex
+	routelock    *multimutex.MultiMutex
 	TaskValue    int64
 	MaxTasks     int
 	MaxRouted    int
@@ -58,7 +57,7 @@ func NewNode(extip, locip string, description info.Info, ttl time.Duration, maxt
 		queuelock:            multimutex.NewMultiMutex(500),
 		allocatelock:         multimutex.NewMultiMutex(500),
 		processlock:          multimutex.NewMultiMutex(1),
-		routelock:            valuemutex.NewValueMutex(int32(maxtasks)),
+		routelock:            multimutex.NewMultiMutex(500),
 	}
 }
 
@@ -143,8 +142,8 @@ func (self *Node) Get(key *string, data *[]byte) error {
 }
 
 func (self *Node) AllocateTask(task *tasks.Task, result *[]byte) error {
-	self.routelock.Lock(int32(task.Value))
-	defer self.routelock.Unlock(int32(task.Value))
+	self.routelock.Lock()
+	defer self.routelock.Unlock()
 	if task.Id == 0 {
 		task.Id = murmur3.Sum64([]byte(fmt.Sprintf("%v", time.Now().UnixNano()))) >> 16
 	}

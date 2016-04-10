@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -17,10 +18,11 @@ import (
 type Peer struct {
 	client *rpc.Client
 	Addr   string `json:"addr"`
-	conn net.Conn
+	conn   net.Conn
 	info.Info
 	id   uint64
 	dead uint32
+	wg   *sync.WaitGroup
 }
 
 func ThisPeer(intaddr, addr string, description info.Info) *Peer {
@@ -56,7 +58,7 @@ func NewPeer(intaddr, locaddr, remaddr string) (*Peer, error) {
 			conn = conn2
 		}
 	}
-	peer := &Peer{Addr: remaddr, Info: description, dead: 0, id: util.IpValue(remaddr), client: client, conn: conn}
+	peer := &Peer{Addr: remaddr, Info: description, dead: 0, id: util.IpValue(remaddr), client: client, conn: conn, wg: &sync.WaitGroup{}}
 	go func() {
 		for !peer.isDead() {
 			if !peer.livecheck() {
@@ -88,32 +90,59 @@ func (self *Peer) kill() {
 	atomic.StoreUint32(&self.dead, 1)
 }
 
+func (self *Peer) evict() {
+	log.Println("Evicted")
+	atomic.StoreUint32(&self.dead, 1)
+
+	ch := make(chan struct{})
+	go func() {
+		self.wg.Wait()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+	case <-time.After(20 * time.Second):
+	}
+	log.Println("killed")
+	self.kill()
+}
+
 func (self *Peer) ping() (err error) {
+	self.wg.Add(1)
 	err = self.client.Call("Node.Ping", &struct{}{}, &struct{}{})
+	self.wg.Done()
 	return err
 }
 
 //gets the peers of the peer
 func (self *Peer) getpeers(x int) (peers []string, err error) {
+	self.wg.Add(1)
 	err = self.client.Call("Node.GetPeers", &x, &peers)
+	self.wg.Done()
 	return peers, err
 }
 
 //Puts a value on the dht
 func (self *Peer) put(item *common.Item) (success bool, err error) {
+	self.wg.Add(1)
 	err = self.client.Call("Node.Put", item, &success)
+	self.wg.Done()
 	return success, err
 }
 
 //Gets a value from the dht
 func (self *Peer) get(key string) (data []byte, err error) {
+	self.wg.Add(1)
 	err = self.client.Call("Node.Get", &key, &data)
+	self.wg.Done()
 	return data, err
 }
 
 //Puts a task on the queue of the peer
 func (self *Peer) AllocateTask(task *tasks.Task) (result []byte, err error) {
+	self.wg.Add(1)
 	err = self.client.Call("Node.AllocateTask", task, &result)
+	self.wg.Done()
 	return result, err
 }
 
